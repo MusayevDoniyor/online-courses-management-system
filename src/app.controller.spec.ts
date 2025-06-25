@@ -12,8 +12,8 @@ describe('AppController', () => {
       providers: [AppService],
     }).compile();
 
-    appController = module.get<AppController>(AppController);
-    appService = module.get<AppService>(AppService);
+    appController = module.get(AppController);
+    appService = module.get(AppService);
   });
 
   afterEach(() => {
@@ -21,21 +21,22 @@ describe('AppController', () => {
   });
 
   describe('getHello', () => {
-    it('should return an object with message and statistics', () => {
+    it('should return a valid HelloResponse', () => {
       const result = appController.getHello() as HelloResponse;
-      expect(result).toEqual({
-        message: expect.any(String),
-        statistics: expect.any(Object),
-      });
+
       expect(result.message).toBe('Hello World 🌏!');
+      expect(result.statistics).toHaveProperty('totalRequests');
+      expect(result.statistics).toHaveProperty('requestsPerMinute');
+      expect(result.statistics).toHaveProperty('serverUptime');
+      expect(result.statistics).toHaveProperty('currentServerTime');
+      expect(result.statistics).toHaveProperty('requestHistoryCount');
+      expect(result.statistics).toHaveProperty('averageRequestsPerMinute');
     });
 
     it('should increment counters correctly', () => {
       appService.resetCounters();
-
       appService.recordRequest();
       const first = appController.getHello() as HelloResponse;
-
       appService.recordRequest();
       const second = appController.getHello() as HelloResponse;
 

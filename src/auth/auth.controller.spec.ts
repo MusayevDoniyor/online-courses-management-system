@@ -3,10 +3,10 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { Response } from 'express';
 
 describe('AuthController', () => {
   let controller: AuthController;
-  let authService: AuthService;
 
   const mockAuthService = {
     register: jest.fn(),
@@ -20,8 +20,7 @@ describe('AuthController', () => {
       providers: [{ provide: AuthService, useValue: mockAuthService }],
     }).compile();
 
-    controller = module.get<AuthController>(AuthController);
-    authService = module.get<AuthService>(AuthService);
+    controller = module.get(AuthController);
   });
 
   it('should be defined', () => {
@@ -35,7 +34,7 @@ describe('AuthController', () => {
       password: '123456',
     };
 
-    const expectedResult = {
+    const expected = {
       message: 'User registered successfully',
       user: {
         id: 'uuid',
@@ -45,14 +44,14 @@ describe('AuthController', () => {
       },
     };
 
-    mockAuthService.register.mockResolvedValue(expectedResult);
+    mockAuthService.register.mockResolvedValue(expected);
 
     const result = await controller.register(dto);
-    expect(result).toEqual(expectedResult);
+    expect(result).toEqual(expected);
     expect(mockAuthService.register).toHaveBeenCalledWith(dto);
   });
 
-  it('should login a user and return token + user info', async () => {
+  it('should login a user and set cookie', async () => {
     const dto: LoginDto = {
       email: 'test@code.com',
       password: '123456',
@@ -69,22 +68,21 @@ describe('AuthController', () => {
       access_token: 'mocked-token',
     };
 
-    // mock response object
-    const res = {
+    const mockRes = {
       cookie: jest.fn(),
-    } as any;
+    } as unknown as Response;
 
     mockAuthService.login.mockResolvedValue(expected);
 
-    const result = await controller.login(dto, res);
+    const result = await controller.login(dto, mockRes);
 
     expect(result).toEqual(expected);
-    expect(res.cookie).toHaveBeenCalledWith(
+    expect(mockRes.cookie).toHaveBeenCalledWith(
       'access_token',
       expected.access_token,
       expect.objectContaining({
         httpOnly: true,
-        secure: false, // NODE_ENV !== production by default
+        secure: false,
       }),
     );
   });

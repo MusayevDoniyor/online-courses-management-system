@@ -3,6 +3,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    develop:
+      watch:
+        - path: .
+          target: /app
+          action: sync
+        - path: ./package.json
+          target: /app/package.json
+          action: rebuild
     container_name: course-api
     env_file:
       - .env

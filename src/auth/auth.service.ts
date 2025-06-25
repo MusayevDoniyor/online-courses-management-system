@@ -38,12 +38,14 @@ export class AuthService {
 
     await this.userRepo.save(user);
 
-    const { password, ...rest } = user;
-
     return {
       message: 'User registered successfully',
       user: {
-        ...rest,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.created_at,
       },
     };
   }
@@ -73,11 +75,15 @@ export class AuthService {
       secret: this.configService.get<string>('JWT_SECRET'),
     });
 
-    const { password, ...rest } = user;
-
     return {
       message: 'User logged in successfully',
-      user: rest,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        createdAt: user.created_at,
+      },
       access_token: token,
     };
   }

@@ -69,7 +69,7 @@ describe('AuthController', () => {
     };
 
     const mockRes = {
-      cookie: jest.fn(),
+      cookie: jest.fn().mockImplementation(() => {}),
     } as unknown as Response;
 
     mockAuthService.login.mockResolvedValue(expected);
@@ -105,6 +105,7 @@ describe('AuthController', () => {
     mockAuthService.getProfile.mockResolvedValue(expectedProfile);
 
     const result = await controller.getProfile({ user: mockUser });
+
     expect(result).toEqual(expectedProfile);
     expect(mockAuthService.getProfile).toHaveBeenCalledWith(mockUser);
   });

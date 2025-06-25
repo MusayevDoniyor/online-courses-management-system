@@ -11,7 +11,7 @@ import { AppService } from 'src/app.service';
 export class StatsInterceptor implements NestInterceptor {
   constructor(private readonly appService: AppService) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     this.appService.recordRequest();
     return next.handle();
   }

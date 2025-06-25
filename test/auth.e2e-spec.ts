@@ -7,7 +7,7 @@ import { JwtAuthGuard } from '../src/common/guards/auth.guard';
 
 describe('AuthController (e2e) with mocks', () => {
   let app: INestApplication;
-  let authService = {
+  const authService = {
     register: jest.fn(),
     login: jest.fn(),
     getProfile: jest.fn(),

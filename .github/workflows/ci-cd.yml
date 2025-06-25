@@ -38,25 +38,25 @@ jobs:
       - name: Run tests
         run: npm run test
 
-  deploy:
-    needs: build-test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+  # deploy:
+  #   needs: build-test
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
 
-    steps:
-      - uses: actions/checkout@v3
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Setup SSH for Oracle Cloud
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+  #     - name: Setup SSH for Oracle Cloud
+  #       run: |
+  #         mkdir -p ~/.ssh
+  #         echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/id_rsa
+  #         chmod 600 ~/.ssh/id_rsa
+  #         ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy to Oracle Cloud
-        run: |
-          ssh ${{ secrets.USERNAME }}@${{ secrets.HOST }} << 'EOF'
-            cd /home/ubuntu/projects/online-courses-management-system
-            git pull origin main
-            docker-compose -f docker-compose.prod.yml up --build -d
-          EOF
+  #     - name: Deploy to Oracle Cloud
+  #       run: |
+  #         ssh ${{ secrets.USERNAME }}@${{ secrets.HOST }} << 'EOF'
+  #           cd /home/ubuntu/projects/online-courses-management-system
+  #           git pull origin main
+  #           docker-compose -f docker-compose.prod.yml up --build -d
+  #         EOF

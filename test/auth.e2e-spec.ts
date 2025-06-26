@@ -1,3 +1,5 @@
+// test/auth.e2e-spec.ts
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
@@ -11,6 +13,7 @@ describe('AuthController (e2e) with mocks', () => {
     register: jest.fn(),
     login: jest.fn(),
     getProfile: jest.fn(),
+    refresh: jest.fn(), // ✅ qo‘shildi
   };
 
   beforeAll(async () => {
@@ -75,7 +78,6 @@ describe('AuthController (e2e) with mocks', () => {
       message: 'User logged in successfully',
       access_token: 'mocked-jwt',
       user: {
-        // id: '1',
         name: 'Test User',
         email: dto.email,
         role: 'student',
@@ -106,6 +108,39 @@ describe('AuthController (e2e) with mocks', () => {
       .expect(200)
       .expect((res) => {
         expect(res.body.email).toBe('test@code.com');
+      });
+  });
+
+  it('POST /auth/refresh - should return new access token', async () => {
+    const mockAccessToken = 'new-mocked-access-token';
+
+    authService.refresh = jest.fn().mockImplementation((req, res) => {
+      res.cookie('access_token', mockAccessToken);
+      return { access_token: mockAccessToken };
+    });
+
+    return request(app.getHttpServer())
+      .post('/auth/refresh')
+      .expect(201)
+      .expect('set-cookie', /access_token=new-mocked-access-token/)
+      .expect((res) => {
+        expect(res.body.access_token).toBe(mockAccessToken);
+      });
+  });
+
+  it('POST /auth/logout - should clear cookies and return message', async () => {
+    return request(app.getHttpServer())
+      .post('/auth/logout')
+      .expect(201)
+      .expect((res) => {
+        const cookies = res.headers['set-cookie'];
+        expect(cookies).toEqual(
+          expect.arrayContaining([
+            expect.stringMatching(/access_token=;/),
+            expect.stringMatching(/refresh_token=;/),
+          ]),
+        );
+        expect(res.body.message).toBe('Logged out successfully');
       });
   });
 

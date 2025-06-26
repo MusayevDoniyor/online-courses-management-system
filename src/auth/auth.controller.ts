@@ -33,17 +33,15 @@ export class AuthController {
     const { refresh_token, ...authRes } =
       await this.authService.login(loginDto);
 
-    res.cookie('access_token', authRes.access_token, {
+    const cookieConfigs = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    });
+      sameSite: 'strict' as const,
+    };
 
-    res.cookie('refresh_token', refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    });
+    res.cookie('access_token', authRes.access_token, cookieConfigs);
+
+    res.cookie('refresh_token', refresh_token, cookieConfigs);
 
     return authRes;
   }

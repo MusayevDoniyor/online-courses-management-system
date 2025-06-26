@@ -4,7 +4,11 @@ import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
+import { CourseModule } from './course/course.module';
 import { User } from './auth/entities/user.entity';
+import { Course } from './course/entities/course.entity';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { StatsInterceptor } from './common/interceptors/stats.interceptor';
 
 @Module({
   imports: [
@@ -19,15 +23,23 @@ import { User } from './auth/entities/user.entity';
         return {
           type: 'postgres',
           url,
-          entities: [User],
+          // entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+          entities: [User, Course],
           synchronize: configService.get('NODE_ENV') === 'development',
         };
       },
       inject: [ConfigService],
     }),
     AuthModule,
+    CourseModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: StatsInterceptor,
+    },
+  ],
 })
 export class AppModule {}

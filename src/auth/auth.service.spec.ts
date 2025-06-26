@@ -4,6 +4,7 @@ import { User } from './entities/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { Course } from '../course/entities/course.entity';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -29,6 +30,7 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
+        { provide: getRepositoryToken(Course), useValue: mockUserRepo },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
       ],

@@ -3,20 +3,17 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
-import { StatsInterceptor } from './common/interceptors/stats.interceptor';
-import { AppService } from './app.service';
+
 import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const appService = app.get(AppService);
 
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
     }),
   );
-  app.useGlobalInterceptors(new StatsInterceptor(appService));
   app.use(cookieParser());
   app.use(helmet());
 
@@ -54,7 +51,7 @@ async function bootstrap() {
       persistAuthorization: true,
       docExpansion: 'list',
       tagsSorter: 'alpha',
-      operationsSorter: 'method',
+      // operationsSorter: 'method',
     },
   });
 

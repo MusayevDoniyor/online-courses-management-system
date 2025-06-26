@@ -1,12 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
+  IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { UserRole } from '../entities/user.entity';
 
 export class RegisterDto {
   @ApiProperty({ example: 'John' })
@@ -28,4 +31,9 @@ export class RegisterDto {
       "Parol kamida bitta katta, kichik harf, raqam va belgi o'z ichiga olishi kerak",
   })
   password: string;
+
+  @ApiProperty({ example: UserRole.STUDENT })
+  @IsOptional()
+  @IsEnum(UserRole)
+  role?: UserRole;
 }

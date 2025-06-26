@@ -3,9 +3,11 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Course } from '../../course/entities/course.entity';
 
 export enum UserRole {
   STUDENT = 'student',
@@ -29,6 +31,9 @@ export class User {
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.STUDENT })
   role: UserRole;
+
+  @OneToMany(() => Course, (course) => course.teacher)
+  courses: Course[];
 
   @CreateDateColumn({
     type: 'timestamp with time zone',

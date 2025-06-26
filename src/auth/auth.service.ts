@@ -5,12 +5,13 @@ import {
 } from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from './entities/auth.entity';
+import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { Request, Response } from 'express';
 
 export interface IUserPayload {
   id: string;
@@ -71,8 +72,15 @@ export class AuthService {
     }
 
     const payload = { sub: user.id, email: user.email, role: user.role };
-    const token = await this.jwtService.signAsync(payload, {
+
+    const accessToken = await this.jwtService.signAsync(payload, {
       secret: this.configService.get<string>('JWT_SECRET'),
+      expiresIn: '15m',
+    });
+
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      expiresIn: '7d',
     });
 
     return {
@@ -84,8 +92,34 @@ export class AuthService {
         role: user.role,
         createdAt: user.created_at,
       },
-      access_token: token,
+      access_token: accessToken,
+      refresh_token: refreshToken,
     };
+  }
+
+  async refresh(req: Request, res: Response) {
+    const refreshToken = req.cookies?.refresh_token;
+    if (!refreshToken) throw new UnauthorizedException('No refresh token');
+
+    const payload = await this.jwtService.verifyAsync(refreshToken, {
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+    });
+
+    const user = await this.userRepo.findOneBy({ id: payload.sub });
+    if (!user) throw new UnauthorizedException('User not found');
+
+    const accessToken = await this.jwtService.signAsync(
+      { sub: user.id, email: user.email, role: user.role },
+      { secret: this.configService.get('JWT_SECRET'), expiresIn: '15m' },
+    );
+
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
+    return { message: 'Access token refreshed' };
   }
 
   async getProfile(userPayload: IUserPayload) {

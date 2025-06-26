@@ -6,11 +6,13 @@ import {
   Res,
   UseGuards,
   Request,
+  Req,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService, IUserPayload } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { Response } from 'express';
+import { Request as ServerRequest, Response } from 'express';
 import { JwtAuthGuard } from '../common/guards/auth.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
@@ -29,18 +31,44 @@ export class AuthController {
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const authRes = await this.authService.login(loginDto);
+    const { refresh_token, ...authRes } =
+      await this.authService.login(loginDto);
+
     res.cookie('access_token', authRes.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
+    res.cookie('refresh_token', refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
     });
 
     return authRes;
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post('/refresh')
+  async refresh(
+    @Req() req: ServerRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.authService.refresh(req, res);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('/profile')
   async getProfile(@Request() req: { user: IUserPayload }) {
     return this.authService.getProfile(req.user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
+    return { message: 'Logged out successfully' };
   }
 }

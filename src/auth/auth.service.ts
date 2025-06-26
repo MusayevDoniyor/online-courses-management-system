@@ -13,6 +13,12 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 
+interface JwtRefreshPayload {
+  sub: string;
+  email: string;
+  role: string;
+}
+
 export interface IUserPayload {
   id: string;
   email: string;
@@ -98,19 +104,27 @@ export class AuthService {
   }
 
   async refresh(req: Request, res: Response) {
-    const refreshToken = req.cookies?.refresh_token;
+    const refreshToken: string | undefined = (
+      req.cookies as { refresh_token?: string }
+    )?.refresh_token;
     if (!refreshToken) throw new UnauthorizedException('No refresh token');
 
-    const payload = await this.jwtService.verifyAsync(refreshToken, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-    });
+    const payload = await this.jwtService.verifyAsync<JwtRefreshPayload>(
+      refreshToken,
+      {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET')!,
+      },
+    );
 
     const user = await this.userRepo.findOneBy({ id: payload.sub });
     if (!user) throw new UnauthorizedException('User not found');
 
     const accessToken = await this.jwtService.signAsync(
       { sub: user.id, email: user.email, role: user.role },
-      { secret: this.configService.get('JWT_SECRET'), expiresIn: '15m' },
+      {
+        secret: this.configService.get<string>('JWT_SECRET')!,
+        expiresIn: '15m',
+      },
     );
 
     res.cookie('access_token', accessToken, {

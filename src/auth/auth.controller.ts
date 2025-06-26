@@ -7,7 +7,6 @@ import {
   UseGuards,
   Request,
   Req,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService, IUserPayload } from './auth.service';
 import { RegisterDto } from './dto/register.dto';

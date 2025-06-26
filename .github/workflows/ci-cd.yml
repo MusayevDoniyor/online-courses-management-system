@@ -1,4 +1,4 @@
-name: CI/CD
+name: CI/CD Pipeline
 
 on:
   push:
@@ -6,8 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  SSH_USER: ubuntu
+  SSH_HOST: 129.150.45.33
+  PROJECT_DIR: /home/ubuntu/online-courses
+
 jobs:
-  build-test:
+  build-test-deploy:
     runs-on: ubuntu-latest
 
     services:
@@ -19,7 +24,11 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: 2009
           POSTGRES_DB: online_courses_db
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v3
@@ -28,6 +37,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
@@ -38,25 +48,40 @@ jobs:
       - name: Run tests
         run: npm run test
 
-  # deploy:
-  #   needs: build-test
-  #   runs-on: ubuntu-latest
-  #   if: github.ref == 'refs/heads/main'
+      - name: Add SSH key
+        if: github.ref == 'refs/heads/main'
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.PRIVATE_KEY }}
 
-  #   steps:
-  #     - uses: actions/checkout@v3
+      - name: Copy files via rsync
+        if: github.ref == 'refs/heads/main'
+        run: |
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            ./ ${{ env.SSH_USER }}@${{ env.SSH_HOST }}:${{ env.PROJECT_DIR }}
 
-  #     - name: Setup SSH for Oracle Cloud
-  #       run: |
-  #         mkdir -p ~/.ssh
-  #         echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/id_rsa
-  #         chmod 600 ~/.ssh/id_rsa
-  #         ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+      - name: Deploy application
+        if: github.ref == 'refs/heads/main'
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << 'EOF'
+          cd $PROJECT_DIR
 
-  #     - name: Deploy to Oracle Cloud
-  #       run: |
-  #         ssh ${{ secrets.USERNAME }}@${{ secrets.HOST }} << 'EOF'
-  #           cd /home/ubuntu/projects/online-courses-management-system
-  #           git pull origin main
-  #           docker-compose -f docker-compose.prod.yml up --build -d
-  #         EOF
+          # Ensure Docker is running
+          sudo systemctl start docker || true
+
+          # Stop and remove old containers
+          docker-compose down || true
+
+          # Pull fresh images and rebuild
+          docker-compose pull || true
+          docker-compose up -d --build
+
+          # Run database migrations
+          docker-compose exec backend npm run migration:run
+
+          # Clean up old images
+          docker image prune -f
+          EOF

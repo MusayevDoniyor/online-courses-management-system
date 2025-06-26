@@ -7,7 +7,6 @@ import { CourseLevels } from './entities/course.entity';
 
 describe('CourseController', () => {
   let controller: CourseController;
-  let service: CourseService;
 
   const mockCourseService = {
     create: jest.fn(),
@@ -29,7 +28,6 @@ describe('CourseController', () => {
     }).compile();
 
     controller = module.get<CourseController>(CourseController);
-    service = module.get<CourseService>(CourseService);
   });
 
   it('should be defined', () => {

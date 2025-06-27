@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Course } from './course.entity';
+import { Enrollment } from './enrollment.entity';
 
 export enum UserRole {
   STUDENT = 'student',
@@ -34,6 +35,9 @@ export class User {
 
   @OneToMany(() => Course, (course) => course.teacher)
   courses: Course[];
+
+  @OneToMany(() => Enrollment, (enrollment) => enrollment.user)
+  enrollments: Enrollment[];
 
   @CreateDateColumn({
     type: 'timestamp with time zone',

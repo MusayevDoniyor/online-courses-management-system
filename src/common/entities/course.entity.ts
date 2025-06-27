@@ -3,10 +3,13 @@ import {
   CreateDateColumn,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from './user.entity';
+import { CoursesModule } from './module.entity';
+import { Enrollment } from './enrollment.entity';
 
 export enum CourseLevels {
   BEGINNER = 'beginner',
@@ -37,6 +40,12 @@ export class Course {
 
   @Column('simple-array')
   category: string[];
+
+  @OneToMany(() => CoursesModule, (module) => module.course)
+  modules: CoursesModule[];
+
+  @OneToMany(() => Enrollment, (enrollment) => enrollment.course)
+  enrollments: Enrollment[];
 
   @Column({
     type: 'enum',

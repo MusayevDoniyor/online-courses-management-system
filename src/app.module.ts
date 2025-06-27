@@ -9,6 +9,9 @@ import { User } from './common/entities/user.entity';
 import { Course } from './common/entities/course.entity';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { StatsInterceptor } from './common/interceptors/stats.interceptor';
+import { Enrollment } from './common/entities/enrollment.entity';
+import { Lesson } from './common/entities/lesson.entity';
+import { CoursesModule } from './common/entities/module.entity';
 
 @Module({
   imports: [
@@ -24,7 +27,7 @@ import { StatsInterceptor } from './common/interceptors/stats.interceptor';
           type: 'postgres',
           url,
           // entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-          entities: [User, Course],
+          entities: [User, Course, Enrollment, Lesson, CoursesModule],
           synchronize: configService.get('NODE_ENV') === 'development',
         };
       },

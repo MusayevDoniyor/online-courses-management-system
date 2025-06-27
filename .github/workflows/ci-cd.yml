@@ -54,34 +54,31 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.PRIVATE_KEY }}
 
+      - name: Debug SSH key (optional)
+        run: ssh-add -L
+
       - name: Copy files via rsync
         if: github.ref == 'refs/heads/main'
+        env:
+          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
         run: |
           rsync -avz --delete \
             --exclude='.git' \
             --exclude='node_modules' \
-            -e "ssh -o StrictHostKeyChecking=no" \
+            -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
             ./ ${{ env.SSH_USER }}@${{ env.SSH_HOST }}:${{ env.PROJECT_DIR }}
 
       - name: Deploy application
         if: github.ref == 'refs/heads/main'
+        env:
+          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << 'EOF'
           cd $PROJECT_DIR
-
-          # Ensure Docker is running
           sudo systemctl start docker || true
-
-          # Stop and remove old containers
           docker-compose down || true
-
-          # Pull fresh images and rebuild
           docker-compose pull || true
           docker-compose up -d --build
-
-          # Run database migrations
           docker-compose exec backend npm run migration:run
-
-          # Clean up old images
           docker image prune -f
           EOF

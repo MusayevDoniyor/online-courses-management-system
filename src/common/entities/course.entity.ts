@@ -1,4 +1,3 @@
-import { User } from '../../auth/entities/user.entity';
 import {
   Column,
   CreateDateColumn,
@@ -7,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { User } from './user.entity';
 
 export enum CourseLevels {
   BEGINNER = 'beginner',

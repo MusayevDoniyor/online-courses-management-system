@@ -1,28 +1,32 @@
+version: '3.8'
+
 services:
   backend:
     build:
       context: .
-      dockerfile: Dockerfile
-    develop:
-      watch:
-        - path: .
-          target: /app
-          action: sync
-        - path: ./package.json
-          target: /app/package.json
-          action: rebuild
+      dockerfile:
+        Dockerfile
+        # develop:
+        # watch:
+        #   - path: .
+        #     target: /app
+        #     action: sync
+        #   - path: ./package.json
+        #     target: /app/package.json
+        #     action: rebuild
     container_name: course-api
     env_file:
-      - .env
+      - .env.prod # Alohida production .env fayli
     ports:
       - '3000:3000'
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
-      - .:/app
-      - /app/node_modules
-    command: npm run start:dev
+      - ./dist:/app/dist # Faqat dist papkasini mount qilish
     restart: unless-stopped
+    networks:
+      - app-network
 
   postgres:
     image: postgres:15
@@ -31,11 +35,22 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: 2009
       POSTGRES_DB: online_courses_db
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
     ports:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
+    networks:
+      - app-network
 
 volumes:
   pgdata:
+
+networks:
+  app-network:
+    driver: bridge

@@ -6,7 +6,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { CourseLevels } from '../entities/course.entity';
+import { CourseLevels } from '../../common/entities/course.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateCourseDto {

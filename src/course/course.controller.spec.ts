@@ -3,7 +3,7 @@ import { CourseController } from './course.controller';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
-import { CourseLevels } from './entities/course.entity';
+import { CourseLevels } from '../common/entities/course.entity';
 
 describe('CourseController', () => {
   let controller: CourseController;

@@ -5,8 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { CourseModule } from './course/course.module';
-import { User } from './auth/entities/user.entity';
-import { Course } from './course/entities/course.entity';
+import { User } from './common/entities/user.entity';
+import { Course } from './common/entities/course.entity';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { StatsInterceptor } from './common/interceptors/stats.interceptor';
 

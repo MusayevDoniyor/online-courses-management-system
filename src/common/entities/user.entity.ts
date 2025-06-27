@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { Course } from '../../course/entities/course.entity';
+import { Course } from './course.entity';
 
 export enum UserRole {
   STUDENT = 'student',

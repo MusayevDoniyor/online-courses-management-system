@@ -50,58 +50,58 @@ jobs:
       - name: Build Docker image
         run: docker build -t online-courses .
 
-  deploy:
-    needs: build-test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+  # deploy:
+  #   needs: build-test
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
 
-    steps:
-      - uses: actions/checkout@v3
+  #   steps:
+  #     - uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-          cache: 'npm'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: '20'
+  #         cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+  #     - name: Install dependencies
+  #       run: npm ci
 
-      - name: Build application
-        run: npm run build
+  #     - name: Build application
+  #       run: npm run build
 
-      - name: Add SSH key
-        uses: webfactory/ssh-agent@v0.7.0
-        with:
-          ssh-private-key: ${{ secrets.PRIVATE_KEY }}
+  #     - name: Add SSH key
+  #       uses: webfactory/ssh-agent@v0.7.0
+  #       with:
+  #         ssh-private-key: ${{ secrets.PRIVATE_KEY }}
 
-      - name: Install rsync
-        run: sudo apt-get update && sudo apt-get install -y rsync
+  #     - name: Install rsync
+  #       run: sudo apt-get update && sudo apt-get install -y rsync
 
-      - name: Prepare remote directory
-        env:
-          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ env.SSH_USER }}@${{ env.SSH_HOST }} "mkdir -p ${{ env.PROJECT_DIR }}"
-          ssh -o StrictHostKeyChecking=no ${{ env.SSH_USER }}@${{ env.SSH_HOST }} "sudo chown -R ubuntu:ubuntu ${{ env.PROJECT_DIR }}"
+  #     - name: Prepare remote directory
+  #       env:
+  #         SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+  #       run: |
+  #         ssh -o StrictHostKeyChecking=no ${{ env.SSH_USER }}@${{ env.SSH_HOST }} "mkdir -p ${{ env.PROJECT_DIR }}"
+  #         ssh -o StrictHostKeyChecking=no ${{ env.SSH_USER }}@${{ env.SSH_HOST }} "sudo chown -R ubuntu:ubuntu ${{ env.PROJECT_DIR }}"
 
-      - name: Copy files
-        env:
-          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
-        run: |
-          rsync -avz --delete \
-            --exclude='.git' \
-            --exclude='node_modules' \
-            --exclude='.env' \
-            -e "ssh -o StrictHostKeyChecking=no" \
-            ./ ${{ env.SSH_USER }}@${{ env.SSH_HOST }}:${{ env.PROJECT_DIR }}
+  #     - name: Copy files
+  #       env:
+  #         SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+  #       run: |
+  #         rsync -avz --delete \
+  #           --exclude='.git' \
+  #           --exclude='node_modules' \
+  #           --exclude='.env' \
+  #           -e "ssh -o StrictHostKeyChecking=no" \
+  #           ./ ${{ env.SSH_USER }}@${{ env.SSH_HOST }}:${{ env.PROJECT_DIR }}
 
-      - name: Deploy application
-        env:
-          SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << 'EOF'
-          cd $PROJECT_DIR
-          docker-compose down
-          docker-compose up -d --build
-          EOF
+  #     - name: Deploy application
+  #       env:
+  #         SSH_AUTH_SOCK: ${{ env.SSH_AUTH_SOCK }}
+  #       run: |
+  #         ssh -o StrictHostKeyChecking=no ${{ env.SSH_USER }}@${{ env.SSH_HOST }} << 'EOF'
+  #         cd $PROJECT_DIR
+  #         docker-compose down
+  #         docker-compose up -d --build
+  #         EOF

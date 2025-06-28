@@ -5,6 +5,7 @@ import { CompleteLessonDto } from './dto/complete-lesson.dto';
 import { JwtAuthGuard } from '../common/guards/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { Request } from 'express';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('enrollments')
@@ -13,17 +14,20 @@ export class EnrollmentsController {
 
   @Roles('teacher', 'student')
   @Post()
-  enroll(@Req() req, @Body() dto: CreateEnrollmentDto) {
-    return this.service.enroll(req.user.id, dto.courseId);
+  enroll(@Req() req: Request, @Body() dto: CreateEnrollmentDto) {
+    return this.service.enroll((req?.user as { id: string }).id, dto.courseId);
   }
 
   @Post('complete')
-  completeLesson(@Req() req: any, @Body() dto: CompleteLessonDto) {
-    return this.service.completeLesson(req.user.id as string, dto.lessonId);
+  completeLesson(@Req() req: Request, @Body() dto: CompleteLessonDto) {
+    return this.service.completeLesson(
+      (req?.user as { id: string }).id,
+      dto.lessonId,
+    );
   }
 
   @Get('progress')
-  getProgress(@Req() req) {
-    return this.service.getProgress(req.user.id);
+  getProgress(@Req() req: Request) {
+    return this.service.getProgress((req?.user as { id: string }).id);
   }
 }

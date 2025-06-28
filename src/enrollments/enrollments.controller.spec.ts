@@ -3,6 +3,7 @@ import { EnrollmentsController } from './enrollments.controller';
 import { EnrollmentsService } from './enrollments.service';
 import { JwtAuthGuard } from '../common/guards/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { Request } from 'express';
 
 describe('EnrollmentsController', () => {
   let controller: EnrollmentsController;
@@ -45,7 +46,7 @@ describe('EnrollmentsController', () => {
 
   describe('enroll', () => {
     it('should enroll a student in a course', async () => {
-      const req = { user: { id: 'user1' } };
+      const req = { user: { id: 'user1' } } as unknown as Request;
       const dto = { courseId: 'course1' };
 
       const res = await controller.enroll(req, dto);
@@ -56,7 +57,7 @@ describe('EnrollmentsController', () => {
 
   describe('completeLesson', () => {
     it('should mark a lesson as completed', async () => {
-      const req = { user: { id: 'user1' } };
+      const req = { user: { id: 'user1' } } as unknown as Request;
       const dto = { lessonId: 'lesson1' };
 
       const res = await controller.completeLesson(req, dto);
@@ -67,7 +68,7 @@ describe('EnrollmentsController', () => {
 
   describe('getProgress', () => {
     it('should return enrollments and progress', async () => {
-      const req = { user: { id: 'user1' } };
+      const req = { user: { id: 'user1' } } as unknown as Request;
 
       const res = await controller.getProgress(req);
       expect(res.message).toBe('Your enrollments and progress');

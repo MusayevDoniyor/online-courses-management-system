@@ -13,6 +13,7 @@ import { Enrollment } from './common/entities/enrollment.entity';
 import { Lesson } from './common/entities/lesson.entity';
 import { CoursesModule } from './common/entities/module.entity';
 import { ModulesModule } from './modules/modules.module';
+import { CompletedLesson } from './common/entities/completedLesson,entity';
 
 @Module({
   imports: [
@@ -28,7 +29,14 @@ import { ModulesModule } from './modules/modules.module';
           type: 'postgres',
           url,
           // entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-          entities: [User, Course, Enrollment, Lesson, CoursesModule],
+          entities: [
+            User,
+            Course,
+            Enrollment,
+            Lesson,
+            CoursesModule,
+            CompletedLesson,
+          ],
           synchronize: configService.get('NODE_ENV') === 'development',
         };
       },

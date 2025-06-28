@@ -3,10 +3,12 @@ import {
   CreateDateColumn,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { CoursesModule } from './module.entity';
+import { CompletedLesson } from './completedLesson,entity';
 
 @Entity({ name: 'Lessons' })
 export class Lesson {
@@ -26,6 +28,9 @@ export class Lesson {
     onDelete: 'CASCADE',
   })
   module: CoursesModule;
+
+  @OneToMany(() => CompletedLesson, (completed) => completed.lesson)
+  completedBy: CompletedLesson[];
 
   @CreateDateColumn({
     type: 'timestamp with time zone',

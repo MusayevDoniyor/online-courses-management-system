@@ -11,13 +11,13 @@ import { Course } from './course.entity';
 import { CompletedLesson } from './completedLesson,entity';
 
 @Entity({ name: 'Enrollments' })
-@Unique(['user', 'course'])
+@Unique(['student', 'course'])
 export class Enrollment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
-  user: User;
+  @ManyToOne(() => User, (user) => user.enrollments, { onDelete: 'CASCADE' })
+  student: User;
 
   @ManyToOne(() => Course, { onDelete: 'CASCADE' })
   course: Course;

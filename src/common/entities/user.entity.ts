@@ -36,7 +36,7 @@ export class User {
   @OneToMany(() => Course, (course) => course.teacher)
   courses: Course[];
 
-  @OneToMany(() => Enrollment, (enrollment) => enrollment.user)
+  @OneToMany(() => Enrollment, (enrollment) => enrollment.student)
   enrollments: Enrollment[];
 
   @CreateDateColumn({

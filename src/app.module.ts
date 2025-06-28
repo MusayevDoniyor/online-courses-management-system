@@ -15,6 +15,7 @@ import { CoursesModule } from './common/entities/module.entity';
 import { ModulesModule } from './modules/modules.module';
 import { CompletedLesson } from './common/entities/completedLesson,entity';
 import { LessonsModule } from './lessons/lessons.module';
+import { EnrollmentsModule } from './enrollments/enrollments.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { LessonsModule } from './lessons/lessons.module';
     CourseModule,
     ModulesModule,
     LessonsModule,
+    EnrollmentsModule,
   ],
   controllers: [AppController],
   providers: [

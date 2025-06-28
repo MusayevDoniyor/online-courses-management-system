@@ -41,7 +41,6 @@ describe('Enrollments E2E', () => {
         password: 'Admin123!',
       });
     adminToken = adminLoginRes.body.access_token;
-    console.log(adminLoginRes.body);
 
     adminId = adminLoginRes.body.user.id || adminLoginRes.body.id;
 

@@ -16,6 +16,9 @@ import { ModulesModule } from './modules/modules.module';
 import { CompletedLesson } from './common/entities/completedLesson,entity';
 import { LessonsModule } from './lessons/lessons.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
+import { Assignment } from './common/entities/assigment.entity';
+import { Result } from './common/entities/result.entity';
+import { AssignmentsModule } from './assignments/assignments.module';
 
 @Module({
   imports: [
@@ -38,6 +41,8 @@ import { EnrollmentsModule } from './enrollments/enrollments.module';
             Lesson,
             CoursesModule,
             CompletedLesson,
+            Assignment,
+            Result,
           ],
           synchronize: configService.get('NODE_ENV') === 'development',
         };
@@ -49,6 +54,7 @@ import { EnrollmentsModule } from './enrollments/enrollments.module';
     ModulesModule,
     LessonsModule,
     EnrollmentsModule,
+    AssignmentsModule,
   ],
   controllers: [AppController],
   providers: [

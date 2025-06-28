@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Course } from './course.entity';
 import { Lesson } from './lesson.entity';
+import { Assignment } from './assigment.entity';
 
 @Entity({ name: 'Modules' })
 export class CoursesModule {
@@ -26,6 +27,11 @@ export class CoursesModule {
 
   @OneToMany(() => Lesson, (lesson) => lesson.module)
   lessons: Lesson[];
+
+  @OneToMany(() => Assignment, (assignment) => assignment.module, {
+    cascade: true,
+  })
+  assignments: Assignment[];
 
   @CreateDateColumn({
     type: 'timestamp with time zone',

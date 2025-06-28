@@ -9,6 +9,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { Course } from './course.entity';
 import { Enrollment } from './enrollment.entity';
+import { Assignment } from './assigment.entity';
 
 export enum UserRole {
   STUDENT = 'student',
@@ -38,6 +39,9 @@ export class User {
 
   @OneToMany(() => Enrollment, (enrollment) => enrollment.student)
   enrollments: Enrollment[];
+
+  @OneToMany(() => Assignment, (a) => a.student)
+  assignments: Assignment[];
 
   @CreateDateColumn({
     type: 'timestamp with time zone',

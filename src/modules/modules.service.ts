@@ -17,8 +17,6 @@ export class ModulesService {
       relations: ['course'],
     });
 
-    console.log(modules);
-
     if (modules.length == 0)
       return { message: 'Modules are not available in this course' };
 

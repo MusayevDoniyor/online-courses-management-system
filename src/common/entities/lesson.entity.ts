@@ -22,7 +22,7 @@ export class Lesson {
   content: string;
 
   @Column({ nullable: true })
-  videoUrl: string;
+  videoUrl?: string;
 
   @ManyToOne(() => CoursesModule, (module) => module.lessons, {
     onDelete: 'CASCADE',

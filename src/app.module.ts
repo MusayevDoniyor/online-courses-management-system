@@ -14,6 +14,7 @@ import { Lesson } from './common/entities/lesson.entity';
 import { CoursesModule } from './common/entities/module.entity';
 import { ModulesModule } from './modules/modules.module';
 import { CompletedLesson } from './common/entities/completedLesson,entity';
+import { LessonsModule } from './lessons/lessons.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { CompletedLesson } from './common/entities/completedLesson,entity';
     AuthModule,
     CourseModule,
     ModulesModule,
+    LessonsModule,
   ],
   controllers: [AppController],
   providers: [

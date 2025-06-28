@@ -90,7 +90,6 @@ export class AuthService {
       expiresIn: '7d',
     });
 
-    console.log(user);
 
     return {
       message: 'User logged in successfully',

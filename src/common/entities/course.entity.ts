@@ -10,12 +10,7 @@ import {
 import { User } from './user.entity';
 import { CoursesModule } from './module.entity';
 import { Enrollment } from './enrollment.entity';
-
-export enum CourseLevels {
-  BEGINNER = 'beginner',
-  INTERMEDIATE = 'intermediate',
-  ADVANCED = 'advanced',
-}
+import { CourseLevels } from '../types_enums/enums';
 
 @Entity({ name: 'Courses' })
 export class Course {

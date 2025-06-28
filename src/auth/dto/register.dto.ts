@@ -9,7 +9,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { UserRole } from '../../common/entities/user.entity';
+import { UserRole } from '../../common/types_enums/enums';
 
 export class RegisterDto {
   @ApiProperty({ example: 'John' })

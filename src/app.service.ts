@@ -1,18 +1,5 @@
 import { Injectable } from '@nestjs/common';
-
-interface ServerStatistics {
-  totalRequests: number;
-  requestsPerMinute: number;
-  serverUptime: string;
-  currentServerTime: string;
-  requestHistoryCount: number;
-  averageRequestsPerMinute: number;
-}
-
-export interface HelloResponse {
-  message: string;
-  statistics: ServerStatistics;
-}
+import { HelloResponse } from './common/types_enums/types';
 
 @Injectable()
 export class AppService {

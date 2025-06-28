@@ -33,7 +33,7 @@ export class Course {
 
   @ManyToOne(() => User, (user) => user.courses, {
     onDelete: 'SET NULL',
-    eager: false, // optional: `true` bo‘lsa avtomatik `join`
+    eager: true,
     nullable: true,
   })
   teacher: User;

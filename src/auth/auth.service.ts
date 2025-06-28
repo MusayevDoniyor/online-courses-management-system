@@ -60,6 +60,7 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const user = await this.userRepo.findOne({
       where: { email: loginDto.email },
+      select: ['id', 'name', 'email', 'password', 'role', 'created_at'],
     });
 
     if (!user) {
@@ -88,6 +89,8 @@ export class AuthService {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       expiresIn: '7d',
     });
+
+    console.log(user);
 
     return {
       message: 'User logged in successfully',

@@ -4,19 +4,43 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Course } from '../common/entities/course.entity';
 import { Repository } from 'typeorm';
+import { User } from '../common/entities/user.entity';
 
 @Injectable()
 export class CourseService {
   constructor(
     @InjectRepository(Course) private courseRepo: Repository<Course>,
+    @InjectRepository(User) private userRepo: Repository<User>,
   ) {}
 
   async create(createCourseDto: CreateCourseDto) {
-    const course = this.courseRepo.create(createCourseDto);
+    const teacher = await this.userRepo.findOne({
+      where: { id: createCourseDto.teacherId },
+    });
+
+    if (!teacher) throw new NotFoundException('Teacher not found');
+
+    const course = this.courseRepo.create({
+      ...createCourseDto,
+      teacher,
+    });
+
     await this.courseRepo.save(course);
     return {
       message: 'Course created successfully',
-      course,
+      course: {
+        id: course.id,
+        name: course.name,
+        price: course.price,
+        category: course.category,
+        level: course.level,
+        teacher: {
+          id: course.teacher.id,
+          email: course.teacher.email,
+          name: course.teacher.name,
+        },
+        created_at: course.created_at,
+      },
     };
   }
 

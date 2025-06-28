@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { CoursesModule } from './module.entity';
 
-@Entity()
+@Entity({ name: 'Lessons' })
 export class Lesson {
   @PrimaryGeneratedColumn('uuid')
   id: string;

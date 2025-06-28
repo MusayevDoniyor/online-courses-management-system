@@ -25,7 +25,7 @@ export class CreateCourseDto {
   @IsNotEmpty()
   price: number;
 
-  @ApiProperty({ example: 'uuid-of-teacher' })
+  @ApiProperty({ example: 'dd81df63-dc98-426d-bcb9-d4fe7f49921c' })
   @IsString()
   @IsNotEmpty()
   teacherId: string;

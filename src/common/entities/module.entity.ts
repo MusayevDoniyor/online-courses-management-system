@@ -10,7 +10,7 @@ import {
 import { Course } from './course.entity';
 import { Lesson } from './lesson.entity';
 
-@Entity({ name: 'module' })
+@Entity({ name: 'Modules' })
 export class CoursesModule {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -18,8 +18,8 @@ export class CoursesModule {
   @Column()
   title: string;
 
-  @Column('text', { nullable: true })
-  description?: string;
+  @Column('text')
+  description: string;
 
   @ManyToOne(() => Course, (course) => course.modules, { onDelete: 'CASCADE' })
   course: Course;

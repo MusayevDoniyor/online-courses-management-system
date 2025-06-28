@@ -15,7 +15,7 @@ import { JwtAuthGuard } from '../common/guards/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 
-@Controller('course')
+@Controller('courses')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CourseController {
   constructor(private readonly courseService: CourseService) {}

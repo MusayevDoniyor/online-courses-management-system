@@ -12,6 +12,7 @@ import { StatsInterceptor } from './common/interceptors/stats.interceptor';
 import { Enrollment } from './common/entities/enrollment.entity';
 import { Lesson } from './common/entities/lesson.entity';
 import { CoursesModule } from './common/entities/module.entity';
+import { ModulesModule } from './modules/modules.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { CoursesModule } from './common/entities/module.entity';
     }),
     AuthModule,
     CourseModule,
+    ModulesModule,
   ],
   controllers: [AppController],
   providers: [

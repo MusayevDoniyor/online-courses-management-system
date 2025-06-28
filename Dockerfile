@@ -1,17 +1,23 @@
-FROM node:20
+FROM node:20-alpine as builder
 
 WORKDIR /app
 
-COPY package.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY . .
 RUN npm run build
 
-RUN chown -R node:node /app/dist
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./
 
 USER node
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start:prod"]
+CMD ["node", "dist/main"]

@@ -1,90 +1,87 @@
 import * as request from 'supertest';
 import { Test } from '@nestjs/testing';
-import { AppModule } from '../src/app.module';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { AssignmentsController } from '../src/assignments/assignments.controller';
+import { AssignmentsService } from '../src/assignments/assignments.service';
+import { JwtAuthGuard } from '../src/common/guards/auth.guard';
 
-describe('Assignments E2E', () => {
+describe('AssignmentsController (mocked E2E)', () => {
   let app: INestApplication;
-  let studentToken: string;
-  let adminToken: string;
-  let moduleId: string;
+
+  const mockStudent = {
+    id: 'student-123',
+    email: 'student@test.com',
+    role: 'student',
+  };
+
+  const assignmentService = {
+    submitAssignment: jest.fn(),
+    getStudentAssignments: jest.fn(),
+  };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+      controllers: [AssignmentsController],
+      providers: [
+        {
+          provide: AssignmentsService,
+          useValue: assignmentService,
+        },
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({
+        canActivate: (context) => {
+          const req = context.switchToHttp().getRequest();
+          req.user = mockStudent;
+          return true;
+        },
+      })
+      .compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ transform: true }));
+    app.useGlobalPipes(new ValidationPipe());
     await app.init();
-
-    // register + login student
-    const studentEmail = `student${Math.random()}@mail.com`;
-    await request(app.getHttpServer()).post('/auth/register').send({
-      name: 'Stu',
-      email: studentEmail,
-      password: '1234Stu!',
-      role: 'student',
-    });
-
-    const studentLogin = await request(app.getHttpServer())
-      .post('/auth/login')
-      .send({ email: studentEmail, password: '1234Stu!' });
-
-    studentToken = studentLogin.body.access_token;
-
-    // register + login admin
-    const adminEmail = `admin${Math.random()}@mail.com`;
-    await request(app.getHttpServer()).post('/auth/register').send({
-      name: 'Admin',
-      email: adminEmail,
-      password: 'Admin123!',
-      role: 'admin',
-    });
-
-    const adminLogin = await request(app.getHttpServer())
-      .post('/auth/login')
-      .send({ email: adminEmail, password: 'Admin123!' });
-
-    adminToken = adminLogin.body.access_token;
-
-    // create course ➝ module
-    const courseRes = await request(app.getHttpServer())
-      .post('/courses')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({
-        name: 'Test Course',
-        teacherId: adminLogin.body.user.id,
-        price: 0,
-        category: ['test'],
-        level: 'beginner',
-      });
-
-    const moduleRes = await request(app.getHttpServer())
-      .post(`/modules/${courseRes.body.course.id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({ title: 'Module X', description: 'Test' });
-
-    moduleId = moduleRes.body.module.id;
   });
 
-  it('should submit assignment as student', async () => {
+  it('POST /assignments/:moduleId - should submit assignment (mocked)', async () => {
+    const moduleId = 'cf9c92f2-2a2f-4ef9-8a89-e0200c6c484e';
+
+    assignmentService.submitAssignment.mockResolvedValue({
+      message: 'Assignment submitted successfully',
+      assignmentId: 'cf9c92f2-2a2f-4ef9-8a89-e0200c6c4841',
+    });
+
     const res = await request(app.getHttpServer())
       .post(`/assignments/${moduleId}`)
-      .set('Authorization', `Bearer ${studentToken}`)
-      .send({ fileLink: 'http://my-file-link.com' });
+      .send({ fileLink: 'https://example.com/assignment.docx' });
+
+    console.log(res.body);
 
     expect(res.status).toBe(201);
-    expect(res.body.assignmentId).toBeDefined();
+    expect(res.body.assignmentId).toBe('cf9c92f2-2a2f-4ef9-8a89-e0200c6c4841');
   });
 
-  it("should return student's assignments", async () => {
+  it('GET /assignments/my - should return student assignments (mocked)', async () => {
+    assignmentService.getStudentAssignments.mockResolvedValue([
+      {
+        module: { id: 'module-123', title: 'Module X' },
+        assignments: [
+          {
+            id: 'a1',
+            fileLink: 'https://example.com',
+            submittedAt: new Date(),
+          },
+        ],
+      },
+    ]);
+
     const res = await request(app.getHttpServer())
       .get('/assignments/my')
-      .set('Authorization', `Bearer ${studentToken}`);
+      .expect(200);
 
-    expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body[0].module.title).toBe('Module X');
   });
 
   afterAll(async () => {

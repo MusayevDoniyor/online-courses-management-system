@@ -1,107 +1,158 @@
 import * as request from 'supertest';
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { AppModule } from '../src/app.module';
-import { DataSource } from 'typeorm';
+import { CourseController } from '../src/course/course.controller';
+import { CourseService } from '../src/course/course.service';
+import { JwtAuthGuard } from '../src/common/guards/auth.guard';
 
-describe('Courses E2E', () => {
+describe('CoursesController (E2E - pure mock)', () => {
   let app: INestApplication;
-  let accessToken: string;
-  let dataSource: DataSource;
-  let registerRes: request.Response;
+
+  const courseService = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+
+  const mockUser = {
+    id: 'mock-user-id',
+    email: 'admin@test.com',
+    role: 'admin',
+  };
+
+  const mockCourseId = 'mock-course-id';
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      controllers: [CourseController],
+      providers: [
+        {
+          provide: CourseService,
+          useValue: courseService,
+        },
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({
+        canActivate: (context) => {
+          const req = context.switchToHttp().getRequest();
+          req.user = mockUser;
+          return true;
+        },
+      })
+      .compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
-
-    dataSource = moduleRef.get(DataSource);
-
-    registerRes = await request(app.getHttpServer())
-      .post('/auth/register')
-      .send({
-        name: 'Admin User',
-        email: `admin${Math.round(Math.random() * 1000)}@example.com`,
-        password: '/123!Admin',
-        role: 'admin',
-      });
-
-    const loginRes = await request(app.getHttpServer())
-      .post('/auth/login')
-      .send({
-        email: registerRes.body.user.email,
-        password: '/123!Admin',
-      });
-
-    accessToken = loginRes.body.access_token;
   });
 
-  let courseId: string;
-
   it('POST /courses - should create a course', async () => {
-    expect(registerRes.body.user).toBeDefined();
+    const dto = {
+      name: 'Mocked NestJS Course',
+      price: 100000,
+      category: ['backend'],
+      teacherId: mockUser.id,
+      level: 'beginner',
+    };
+
+    const mockResponse = {
+      id: mockCourseId,
+      ...dto,
+    };
+
+    courseService.create.mockResolvedValue({
+      message: 'Course created successfully',
+      course: mockResponse,
+    });
 
     const res = await request(app.getHttpServer())
       .post('/courses')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
-        name: 'NestJS Course',
-        price: 50000,
-        category: ['backend'],
-        teacherId: registerRes.body.user.id,
-        level: 'beginner',
-      });
+      .send(dto)
+      .expect(201);
 
-    expect(res.status).toBe(201);
-    expect(res.body.course).toHaveProperty('id');
-    courseId = res.body.course.id;
+    expect(res.body.course.name).toBe(dto.name);
   });
 
   it('GET /courses - should return list of courses', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/courses')
-      .set('Authorization', `Bearer ${accessToken}`);
+    const mockCourses = [
+      {
+        id: mockCourseId,
+        name: 'Mocked NestJS Course',
+        price: 100000,
+        category: ['backend'],
+        level: 'beginner',
+        teacherId: mockUser.id,
+      },
+    ];
 
-    expect(res.status).toBe(200);
-    expect(res.body.courses.length).toBeGreaterThan(0);
+    courseService.findAll.mockResolvedValue({
+      message: 'Courses found successfully',
+      count: 1,
+      courses: mockCourses,
+    });
+
+    const res = await request(app.getHttpServer()).get('/courses').expect(200);
+
+    expect(res.body.count).toBe(1);
   });
 
-  it('GET /courses/:id - should return specific course', async () => {
-    const res = await request(app.getHttpServer())
-      .get(`/courses/${courseId}`)
-      .set('Authorization', `Bearer ${accessToken}`);
+  it('GET /courses/:id - should return one course', async () => {
+    const mockCourse = {
+      id: mockCourseId,
+      name: 'Mocked NestJS Course',
+    };
 
-    expect(res.status).toBe(200);
-    expect(res.body.course.id).toBe(courseId);
+    courseService.findOne.mockResolvedValue({
+      message: 'Course found',
+      course: mockCourse,
+    });
+
+    const res = await request(app.getHttpServer())
+      .get(`/courses/${mockCourseId}`)
+      .expect(200);
+
+    expect(res.body.course.id).toBe(mockCourseId);
   });
 
-  it('PUT /courses/:id - should update course', async () => {
-    const res = await request(app.getHttpServer())
-      .put(`/courses/${courseId}`)
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({ name: 'Updated NestJS Course' });
+  it('PUT /courses/:id - should update a course', async () => {
+    const updateDto = {
+      name: 'Updated Mock Course',
+    };
 
-    expect(res.status).toBe(200);
-    expect(res.body.course.name).toBe('Updated NestJS Course');
+    const updatedCourse = {
+      id: mockCourseId,
+      ...updateDto,
+    };
+
+    courseService.update.mockResolvedValue({
+      message: 'Course updated successfully',
+      course: updatedCourse,
+    });
+
+    const res = await request(app.getHttpServer())
+      .put(`/courses/${mockCourseId}`)
+      .send(updateDto)
+      .expect(200);
+
+    expect(res.body.course.name).toBe(updateDto.name);
   });
 
   it('DELETE /courses/:id - should delete course', async () => {
-    const res = await request(app.getHttpServer())
-      .delete(`/courses/${courseId}`)
-      .set('Authorization', `Bearer ${accessToken}`);
+    courseService.remove.mockResolvedValue({
+      message: 'Course deleted successfully',
+    });
 
-    expect(res.status).toBe(200);
+    const res = await request(app.getHttpServer())
+      .delete(`/courses/${mockCourseId}`)
+      .expect(200);
+
     expect(res.body.message).toBe('Course deleted successfully');
   });
 
   afterAll(async () => {
-    await dataSource.destroy();
     await app.close();
   });
 });

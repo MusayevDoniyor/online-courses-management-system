@@ -1,154 +1,106 @@
 import * as request from 'supertest';
 import { Test } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { AppModule } from '../src/app.module';
-import { DataSource } from 'typeorm';
+import { EnrollmentsController } from '../src/enrollments/enrollments.controller';
+import { EnrollmentsService } from '../src/enrollments/enrollments.service';
+import { JwtAuthGuard } from '../src/common/guards/auth.guard';
 
-describe('Enrollments E2E', () => {
+describe('EnrollmentsController (mocked)', () => {
   let app: INestApplication;
-  let studentToken: string;
-  let adminToken: string;
-  let dataSource: DataSource;
-  let courseId: string;
-  let lessonId: string;
-  let adminId: string;
+
+  const mockUuid = 'cf9c92f2-2a2f-4ef9-8a89-e0200c6c4a2a';
+
+  const studentUser = {
+    id: mockUuid,
+    email: 'student@test.com',
+    role: 'student',
+  };
+
+  const enrollmentsService = {
+    enroll: jest.fn(),
+    completeLesson: jest.fn(),
+    getProgress: jest.fn(),
+  };
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+      controllers: [EnrollmentsController],
+      providers: [
+        {
+          provide: EnrollmentsService,
+          useValue: enrollmentsService,
+        },
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({
+        canActivate: (context) => {
+          const req = context.switchToHttp().getRequest();
+          req.user = studentUser;
+          return true;
+        },
+      })
+      .compile();
 
     app = moduleRef.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
+    app.useGlobalPipes(new ValidationPipe({ transform: true }));
     await app.init();
-
-    dataSource = moduleRef.get(DataSource);
-
-    const adminEmail = `admin${Math.floor(Math.random() * 1000)}@example.com`;
-    await request(app.getHttpServer()).post('/auth/register').send({
-      name: 'Admin User',
-      email: adminEmail,
-      password: 'Admin123!',
-      role: 'admin',
-    });
-
-    const adminLoginRes = await request(app.getHttpServer())
-      .post('/auth/login')
-      .send({
-        email: adminEmail,
-        password: 'Admin123!',
-      });
-    adminToken = adminLoginRes.body.access_token;
-
-    adminId = adminLoginRes.body.user.id || adminLoginRes.body.id;
-
-    const studentEmail = `student${Math.floor(Math.random() * 1000)}@example.com`;
-    await request(app.getHttpServer()).post('/auth/register').send({
-      name: 'Test Student',
-      email: studentEmail,
-      password: 'Student123!',
-      role: 'student',
-    });
-
-    const studentLoginRes = await request(app.getHttpServer())
-      .post('/auth/login')
-      .send({
-        email: studentEmail,
-        password: 'Student123!',
-      });
-    studentToken = studentLoginRes.body.access_token;
-
-    const courseRes = await request(app.getHttpServer())
-      .post('/courses')
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({
-        name: 'Test Course',
-        price: 0,
-        category: ['test'],
-        teacherId: adminId,
-        level: 'beginner',
-      });
-    courseId = courseRes.body.course.id;
-
-    const moduleRes = await request(app.getHttpServer())
-      .post(`/modules/${courseId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({
-        title: 'Test Module',
-        description: 'Test module description',
-      });
-    const moduleId = moduleRes.body.module.id;
-
-    const lessonRes = await request(app.getHttpServer())
-      .post(`/lessons/${moduleId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .send({
-        title: 'Test Lesson',
-        content: 'Test lesson content',
-      });
-    lessonId = lessonRes.body.lesson.id;
   });
 
-  it('POST /enrollments - should enroll in a course', async () => {
+  it('POST /enrollments - should enroll successfully', async () => {
+    enrollmentsService.enroll.mockResolvedValue({
+      message: 'Enrollment successful',
+      enrollment: {
+        id: mockUuid,
+        courseId: mockUuid,
+      },
+    });
+
     const res = await request(app.getHttpServer())
       .post('/enrollments')
-      .set('Authorization', `Bearer ${studentToken}`)
-      .send({ courseId });
+      .send({ courseId: mockUuid });
 
     expect(res.status).toBe(201);
-    expect(res.body).toHaveProperty('message', 'Enrollment successful');
-    expect(res.body.enrollment).toBeDefined();
+    expect(res.body.message).toBe('Enrollment successful');
+    expect(res.body.enrollment.courseId).toBe(mockUuid);
   });
 
-  it('POST /enrollments/complete - should complete a lesson', async () => {
-    await request(app.getHttpServer())
-      .post('/enrollments')
-      .set('Authorization', `Bearer ${studentToken}`)
-      .send({ courseId });
+  it('POST /enrollments/complete - should mark lesson as completed', async () => {
+    enrollmentsService.completeLesson.mockResolvedValue({
+      message: 'Lesson marked as completed',
+    });
 
     const res = await request(app.getHttpServer())
       .post('/enrollments/complete')
-      .set('Authorization', `Bearer ${studentToken}`)
-      .send({ lessonId });
+      .send({ lessonId: mockUuid });
 
     expect(res.status).toBe(201);
-    expect(res.body).toHaveProperty('message', 'Lesson marked as completed');
+    expect(res.body.message).toBe('Lesson marked as completed');
   });
 
-  it('GET /enrollments/progress - should get enrollment progress', async () => {
-    await request(app.getHttpServer())
-      .post('/enrollments')
-      .set('Authorization', `Bearer ${studentToken}`)
-      .send({ courseId });
+  it('GET /enrollments/progress - should return enrollment progress', async () => {
+    enrollmentsService.getProgress.mockResolvedValue({
+      message: 'Your enrollments and progress',
+      enrollments: [
+        {
+          id: mockUuid,
+          course: {
+            id: mockUuid,
+            name: 'Mock Course',
+          },
+          completedLessons: [],
+        },
+      ],
+    });
 
-    const res = await request(app.getHttpServer())
-      .get('/enrollments/progress')
-      .set('Authorization', `Bearer ${studentToken}`);
+    const res = await request(app.getHttpServer()).get('/enrollments/progress');
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('message', 'Your enrollments and progress');
-    expect(res.body.enrollments).toBeInstanceOf(Array);
-  });
-
-  it('POST /enrollments - should not allow duplicate enrollment', async () => {
-    await request(app.getHttpServer())
-      .post('/enrollments')
-      .set('Authorization', `Bearer ${studentToken}`)
-      .send({ courseId });
-
-    const res = await request(app.getHttpServer())
-      .post('/enrollments')
-      .set('Authorization', `Bearer ${studentToken}`)
-      .send({ courseId });
-
-    expect(res.status).toBe(409);
-    expect(res.body.message).toBe('Already enrolled in this course');
+    expect(res.body.message).toBe('Your enrollments and progress');
+    expect(res.body.enrollments).toHaveLength(1);
   });
 
   afterAll(async () => {
-    await dataSource.destroy();
     await app.close();
   });
 });

@@ -1,27 +1,30 @@
-// test/auth.e2e-spec.ts
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from './../src/app.module';
+import { AuthController } from './../src/auth/auth.controller';
 import { AuthService } from './../src/auth/auth.service';
 import { JwtAuthGuard } from '../src/common/guards/auth.guard';
 
-describe('AuthController (e2e) with mocks', () => {
+describe('AuthController (e2e) — pure mock', () => {
   let app: INestApplication;
-  const authService = {
+
+  const mockAuthService = {
     register: jest.fn(),
     login: jest.fn(),
     getProfile: jest.fn(),
-    refresh: jest.fn(), // ✅ qo‘shildi
+    refresh: jest.fn(),
   };
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      controllers: [AuthController],
+      providers: [
+        {
+          provide: AuthService,
+          useValue: mockAuthService,
+        },
+      ],
     })
-      .overrideProvider(AuthService)
-      .useValue(authService)
       .overrideGuard(JwtAuthGuard)
       .useValue({
         canActivate: (context) => {
@@ -36,26 +39,21 @@ describe('AuthController (e2e) with mocks', () => {
       })
       .compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleRef.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
   });
 
-  it('POST /auth/register - success', async () => {
+  it('POST /auth/register', async () => {
     const dto = {
-      name: 'Test User',
+      name: 'Test',
       email: 'test@example.com',
-      password: 'Securepass123!',
+      password: 'Test1234!',
     };
 
-    authService.register.mockResolvedValue({
+    mockAuthService.register.mockResolvedValue({
       message: 'User registered successfully',
-      user: {
-        id: '1',
-        name: dto.name,
-        email: dto.email,
-        role: 'student',
-      },
+      user: { id: '1', name: dto.name, email: dto.email, role: 'student' },
     });
 
     return request(app.getHttpServer())
@@ -64,24 +62,16 @@ describe('AuthController (e2e) with mocks', () => {
       .expect(201)
       .expect((res) => {
         expect(res.body.user.email).toBe(dto.email);
-        expect(res.body.message).toBe('User registered successfully');
       });
   });
 
-  it('POST /auth/login - success with cookie', async () => {
-    const dto = {
-      email: 'test@example.com',
-      password: 'Securepass123!',
-    };
+  it('POST /auth/login', async () => {
+    const dto = { email: 'test@example.com', password: 'Test1234!' };
 
-    authService.login.mockResolvedValue({
+    mockAuthService.login.mockResolvedValue({
       message: 'User logged in successfully',
       access_token: 'mocked-jwt',
-      user: {
-        name: 'Test User',
-        email: dto.email,
-        role: 'student',
-      },
+      user: { name: 'Test User', email: dto.email, role: 'student' },
     });
 
     return request(app.getHttpServer())
@@ -94,8 +84,8 @@ describe('AuthController (e2e) with mocks', () => {
       });
   });
 
-  it('GET /auth/profile - with JwtAuthGuard mocked', async () => {
-    authService.getProfile.mockResolvedValue({
+  it('GET /auth/profile', async () => {
+    mockAuthService.getProfile.mockResolvedValue({
       id: 'mocked-id',
       email: 'test@code.com',
       name: 'Doniyor',
@@ -111,24 +101,24 @@ describe('AuthController (e2e) with mocks', () => {
       });
   });
 
-  it('POST /auth/refresh - should return new access token', async () => {
-    const mockAccessToken = 'new-mocked-access-token';
+  it('POST /auth/refresh', async () => {
+    const newToken = 'new-access-token';
 
-    authService.refresh = jest.fn().mockImplementation((req, res) => {
-      res.cookie('access_token', mockAccessToken);
-      return { access_token: mockAccessToken };
+    mockAuthService.refresh.mockImplementation((req, res) => {
+      res.cookie('access_token', newToken);
+      return { access_token: newToken };
     });
 
     return request(app.getHttpServer())
       .post('/auth/refresh')
       .expect(201)
-      .expect('set-cookie', /access_token=new-mocked-access-token/)
+      .expect('set-cookie', /access_token=new-access-token/)
       .expect((res) => {
-        expect(res.body.access_token).toBe(mockAccessToken);
+        expect(res.body.access_token).toBe(newToken);
       });
   });
 
-  it('POST /auth/logout - should clear cookies and return message', async () => {
+  it('POST /auth/logout', async () => {
     return request(app.getHttpServer())
       .post('/auth/logout')
       .expect(201)

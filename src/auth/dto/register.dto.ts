@@ -19,7 +19,7 @@ export class RegisterDto {
 
   @ApiProperty({ example: 'john@gmail.com' })
   @IsNotEmpty()
-  @IsEmail({}, { message: "Email manzilingiz no'to'g'ri" })
+  @IsEmail({}, { message: "Email manzilingiz noto'g'ri" })
   email: string;
 
   @ApiProperty({ example: 'StrongPassword123!' })

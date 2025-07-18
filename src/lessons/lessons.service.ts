@@ -1,17 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Lesson } from '../common/entities/lesson.entity';
 import { Repository } from 'typeorm';
-import { CoursesModule } from '../common/entities/module.entity';
+import { Module } from '../common/entities/module.entity';
 
 @Injectable()
 export class LessonsService {
   constructor(
     @InjectRepository(Lesson) private lessonRepo: Repository<Lesson>,
-    @InjectRepository(CoursesModule)
-    private moduleRepo: Repository<CoursesModule>,
+    @InjectRepository(Module)
+    private moduleRepo: Repository<Module>,
   ) {}
 
   async findByModule(moduleId: string) {
@@ -29,11 +33,18 @@ export class LessonsService {
     };
   }
 
-  async create(moduleId: string, createLessonDto: CreateLessonDto) {
+  async create(moduleId: string, createLessonDto: CreateLessonDto, user: any) {
     const module = await this.moduleRepo.findOne({
       where: { id: moduleId },
+      relations: ['course', 'course.teacher'],
     });
     if (!module) throw new NotFoundException('Module not found');
+
+    if (user.role !== 'admin' && module.course.teacher.id !== user.userId) {
+      throw new ForbiddenException(
+        'You are not allowed to add lesson to this module',
+      );
+    }
 
     const lesson = this.lessonRepo.create({ ...createLessonDto, module });
     await this.lessonRepo.save(lesson);
@@ -45,7 +56,10 @@ export class LessonsService {
   }
 
   async findOne(lessonId: string) {
-    const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
+    const lesson = await this.lessonRepo.findOne({
+      where: { id: lessonId },
+      relations: ['module', 'module.course', 'module.course.teacher'],
+    });
 
     if (!lesson) throw new NotFoundException('Lesson not found');
 
@@ -55,8 +69,15 @@ export class LessonsService {
     };
   }
 
-  async update(lessonId: string, updateLessonDto: UpdateLessonDto) {
+  async update(lessonId: string, updateLessonDto: UpdateLessonDto, user: any) {
     const { lesson } = await this.findOne(lessonId);
+
+    if (
+      user.role !== 'admin' &&
+      lesson.module.course.teacher.id !== user.userId
+    ) {
+      throw new ForbiddenException('You are not allowed to update this lesson');
+    }
 
     const updatedLesson = Object.assign(lesson, updateLessonDto);
 
@@ -68,10 +89,17 @@ export class LessonsService {
     };
   }
 
-  async remove(lessonId: string) {
-    await this.findOne(lessonId);
+  async remove(lessonId: string, user: any) {
+    const { lesson } = await this.findOne(lessonId);
 
-    await this.lessonRepo.delete({ id: lessonId });
+    if (
+      user.role !== 'admin' &&
+      lesson.module.course.teacher.id !== user.userId
+    ) {
+      throw new ForbiddenException('You are not allowed to delete this lesson');
+    }
+
+    await this.lessonRepo.remove(lesson);
 
     return { message: 'Lesson removed successfully' };
   }

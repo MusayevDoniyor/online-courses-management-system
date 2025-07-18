@@ -9,7 +9,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { Course } from './course.entity';
 import { Enrollment } from './enrollment.entity';
-import { Assignment } from './assigment.entity';
+import { Assignment } from './assignment.entity';
 import { UserRole } from '../types_enums/enums';
 
 @Entity({ name: 'Users' })

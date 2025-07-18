@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,12 +17,22 @@ export class CourseService {
     @InjectRepository(User) private userRepo: Repository<User>,
   ) {}
 
-  async create(createCourseDto: CreateCourseDto) {
-    const teacher = await this.userRepo.findOne({
-      where: { id: createCourseDto.teacherId },
-    });
+  async create(createCourseDto: CreateCourseDto, user: any) {
+    let teacher: User;
 
-    if (!teacher) throw new NotFoundException('Teacher not found');
+    if (user.role === 'admin') {
+      if (!createCourseDto.teacherId) {
+        throw new NotFoundException(
+          'teacherId must be provided when admin creates a course',
+        );
+      }
+      teacher = await this.userRepo.findOne({
+        where: { id: createCourseDto.teacherId },
+      });
+      if (!teacher) throw new NotFoundException('Teacher not found');
+    } else {
+      teacher = await this.userRepo.findOne({ where: { id: user.userId } });
+    }
 
     const course = this.courseRepo.create({
       ...createCourseDto,
@@ -41,6 +55,84 @@ export class CourseService {
         },
         created_at: course.created_at,
       },
+    };
+  }
+
+  async getTopCourses(period: string, limit: number) {
+    const query = this.courseRepo
+      .createQueryBuilder('course')
+      .leftJoinAndSelect('course.teacher', 'teacher')
+      .leftJoin('course.enrollments', 'enrollment');
+
+    if (period) {
+      const now = new Date();
+      let startDate: Date;
+
+      switch (period) {
+        case 'day':
+          startDate = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() - 1,
+          );
+          break;
+        case 'week':
+          startDate = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() - 7,
+          );
+          break;
+        case 'month':
+          startDate = new Date(
+            now.getFullYear(),
+            now.getMonth() - 1,
+            now.getDate(),
+          );
+          break;
+        case 'year':
+          startDate = new Date(
+            now.getFullYear() - 1,
+            now.getMonth(),
+            now.getDate(),
+          );
+          break;
+        default:
+          startDate = new Date(0);
+      }
+
+      query.andWhere('enrollment.enrolled_at >= :startDate', { startDate });
+    }
+
+    query
+      .groupBy('course.id')
+      .addGroupBy('teacher.id')
+      .select([
+        'course.id',
+        'course.name',
+        'course.price',
+        'course.category',
+        'course.level',
+        'course.created_at',
+        'teacher.id',
+        'teacher.name',
+        'teacher.email',
+      ])
+      .addSelect('COUNT(enrollment.id)', 'enrollmentCount')
+      .orderBy('enrollmentCount', 'DESC')
+      .limit(limit);
+
+    const rawResults = await query.getRawAndEntities();
+
+    const topCourses = rawResults.entities.map((course, index) => ({
+      ...course,
+      enrollmentCount: parseInt(rawResults.raw[index].enrollmentCount, 10),
+    }));
+
+    return {
+      message: 'Top courses retrieved successfully',
+      count: topCourses.length,
+      courses: topCourses,
     };
   }
 
@@ -74,8 +166,12 @@ export class CourseService {
     };
   }
 
-  async update(id: string, updateCourseDto: UpdateCourseDto) {
+  async update(id: string, updateCourseDto: UpdateCourseDto, user: any) {
     const { course } = await this.findOne(id);
+
+    if (user.role !== 'admin' && course.teacher.id !== user.userId) {
+      throw new ForbiddenException('You are not allowed to update this course');
+    }
 
     const updated = Object.assign(course, updateCourseDto);
 
@@ -87,8 +183,13 @@ export class CourseService {
     };
   }
 
-  async remove(id: string) {
+  async remove(id: string, user: any) {
     const { course } = await this.findOne(id);
+
+    if (user.role !== 'admin' && course.teacher.id !== user.userId) {
+      throw new ForbiddenException('You are not allowed to delete this course');
+    }
+
     await this.courseRepo.remove(course);
     return { message: 'Course deleted successfully' };
   }

@@ -7,6 +7,7 @@ import {
   UseGuards,
   Request,
   Req,
+  Delete,
 } from '@nestjs/common';
 import { AuthService, IUserPayload } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -67,5 +68,17 @@ export class AuthController {
     res.clearCookie('access_token');
     res.clearCookie('refresh_token');
     return { message: 'Logged out successfully' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('delete')
+  delete(
+    @Req() req: { user: IUserPayload },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    res.clearCookie('access_token');
+    res.clearCookie('refresh_token');
+
+    return this.authService.deleteProfile(req.user.userId);
   }
 }

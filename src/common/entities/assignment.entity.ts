@@ -6,7 +6,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { CoursesModule } from './module.entity';
+import { Lesson } from './lesson.entity';
 import { User } from './user.entity';
 import { Result } from './result.entity';
 
@@ -15,10 +15,10 @@ export class Assignment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => CoursesModule, (module) => module.assignments, {
+  @ManyToOne(() => Lesson, (lesson) => lesson.assignments, {
     onDelete: 'CASCADE',
   })
-  module: CoursesModule;
+  lesson: Lesson;
 
   @ManyToOne(() => User, (user) => user.assignments, {
     onDelete: 'CASCADE',

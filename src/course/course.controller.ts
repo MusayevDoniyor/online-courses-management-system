@@ -4,9 +4,10 @@ import {
   Post,
   Body,
   Param,
+  Put,
   Delete,
   UseGuards,
-  Put,
+  Query,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -20,10 +21,11 @@ import { Roles } from '../common/decorators/roles.decorator';
 export class CourseController {
   constructor(private readonly courseService: CourseService) {}
 
-  @Roles('admin')
+  @Roles('admin', 'teacher')
   @Post()
-  create(@Body() createCourseDto: CreateCourseDto) {
-    return this.courseService.create(createCourseDto);
+  create(@Body() createCourseDto: CreateCourseDto, @Request() req) {
+    const user = req.user;
+    return this.courseService.create(createCourseDto, user);
   }
 
   @Get()
@@ -31,20 +33,35 @@ export class CourseController {
     return this.courseService.findAll();
   }
 
+  @Get('top')
+  getTopCourses(
+    @Query('period') period: string,
+    @Query('limit') limit: string,
+  ) {
+    const limitNum = parseInt(limit, 10) || 10;
+    return this.courseService.getTopCourses(period, limitNum);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.courseService.findOne(id);
   }
 
-  @Roles('admin')
+  @Roles('admin', 'teacher')
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto) {
-    return this.courseService.update(id, updateCourseDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateCourseDto: UpdateCourseDto,
+    @Request() req,
+  ) {
+    const user = req.user;
+    return this.courseService.update(id, updateCourseDto, user);
   }
 
-  @Roles('admin')
+  @Roles('admin', 'teacher')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.courseService.remove(id);
+  remove(@Param('id') id: string, @Request() req) {
+    const user = req.user;
+    return this.courseService.remove(id, user);
   }
 }

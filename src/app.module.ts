@@ -11,14 +11,15 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { StatsInterceptor } from './common/interceptors/stats.interceptor';
 import { Enrollment } from './common/entities/enrollment.entity';
 import { Lesson } from './common/entities/lesson.entity';
-import { CoursesModule } from './common/entities/module.entity';
+import { Module as CourseModule } from './common/entities/module.entity';
 import { ModulesModule } from './modules/modules.module';
-import { CompletedLesson } from './common/entities/completedLesson,entity';
+import { CompletedLesson } from './common/entities/completedLesson.entity';
 import { LessonsModule } from './lessons/lessons.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
-import { Assignment } from './common/entities/assigment.entity';
+import { Assignment } from './common/entities/assignment.entity';
 import { Result } from './common/entities/result.entity';
 import { AssignmentsModule } from './assignments/assignments.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -39,7 +40,7 @@ import { AssignmentsModule } from './assignments/assignments.module';
             Course,
             Enrollment,
             Lesson,
-            CoursesModule,
+            CourseModule,
             CompletedLesson,
             Assignment,
             Result,
@@ -55,6 +56,7 @@ import { AssignmentsModule } from './assignments/assignments.module';
     LessonsModule,
     EnrollmentsModule,
     AssignmentsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

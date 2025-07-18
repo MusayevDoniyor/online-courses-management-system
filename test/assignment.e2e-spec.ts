@@ -44,8 +44,8 @@ describe('AssignmentsController (mocked E2E)', () => {
     await app.init();
   });
 
-  it('POST /assignments/:moduleId - should submit assignment (mocked)', async () => {
-    const moduleId = 'cf9c92f2-2a2f-4ef9-8a89-e0200c6c484e';
+  it('POST /assignments/:lessonId - should submit assignment (mocked)', async () => {
+    const lessonId = 'cf9c92f2-2a2f-4ef9-8a89-e0200c6c484e';
 
     assignmentService.submitAssignment.mockResolvedValue({
       message: 'Assignment submitted successfully',
@@ -53,10 +53,8 @@ describe('AssignmentsController (mocked E2E)', () => {
     });
 
     const res = await request(app.getHttpServer())
-      .post(`/assignments/${moduleId}`)
+      .post(`/assignments/${lessonId}`)
       .send({ fileLink: 'https://example.com/assignment.docx' });
-
-    console.log(res.body);
 
     expect(res.status).toBe(201);
     expect(res.body.assignmentId).toBe('cf9c92f2-2a2f-4ef9-8a89-e0200c6c4841');
@@ -65,14 +63,10 @@ describe('AssignmentsController (mocked E2E)', () => {
   it('GET /assignments/my - should return student assignments (mocked)', async () => {
     assignmentService.getStudentAssignments.mockResolvedValue([
       {
-        module: { id: 'module-123', title: 'Module X' },
-        assignments: [
-          {
-            id: 'a1',
-            fileLink: 'https://example.com',
-            submittedAt: new Date(),
-          },
-        ],
+        id: 'a1',
+        fileLink: 'https://example.com',
+        submittedAt: new Date(),
+        lesson: { id: 'lesson-123', title: 'Lesson X' },
       },
     ]);
 
@@ -81,7 +75,8 @@ describe('AssignmentsController (mocked E2E)', () => {
       .expect(200);
 
     expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body[0].module.title).toBe('Module X');
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body[0].lesson.title).toBe('Lesson X');
   });
 
   afterAll(async () => {

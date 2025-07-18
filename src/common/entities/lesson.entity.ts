@@ -7,8 +7,9 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { CoursesModule } from './module.entity';
-import { CompletedLesson } from './completedLesson,entity';
+import { Module } from './module.entity';
+import { CompletedLesson } from './completedLesson.entity';
+import { Assignment } from './assignment.entity';
 
 @Entity({ name: 'Lessons' })
 export class Lesson {
@@ -24,13 +25,16 @@ export class Lesson {
   @Column({ nullable: true })
   videoUrl?: string;
 
-  @ManyToOne(() => CoursesModule, (module) => module.lessons, {
+  @ManyToOne(() => Module, (module) => module.lessons, {
     onDelete: 'CASCADE',
   })
-  module: CoursesModule;
+  module: Module;
 
   @OneToMany(() => CompletedLesson, (completed) => completed.lesson)
   completedBy: CompletedLesson[];
+
+  @OneToMany(() => Assignment, (assignment) => assignment.lesson)
+  assignments: Assignment[];
 
   @CreateDateColumn({
     type: 'timestamp with time zone',

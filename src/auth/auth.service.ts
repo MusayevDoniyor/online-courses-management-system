@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -20,7 +21,7 @@ interface JwtRefreshPayload {
 }
 
 export interface IUserPayload {
-  id: string;
+  userId: string;
   email: string;
   role: string;
 }
@@ -108,7 +109,7 @@ export class AuthService {
     const refreshToken: string | undefined = (
       req.cookies as { refresh_token?: string }
     )?.refresh_token;
-    if (!refreshToken) throw new UnauthorizedException('No refresh token');
+    if (!refreshToken) throw new ForbiddenException('Access Denied');
 
     const payload = await this.jwtService.verifyAsync<JwtRefreshPayload>(
       refreshToken,
@@ -141,9 +142,14 @@ export class AuthService {
     return await this.userRepo.findOne({
       where: {
         email: userPayload.email,
-        id: userPayload.id,
+        id: userPayload.userId,
       },
       select: ['id', 'name', 'email', 'role', 'created_at'],
     });
+  }
+
+  async deleteProfile(id: string) {
+    await this.userRepo.delete(id);
+    return { message: 'Profile deleted successfully' };
   }
 }

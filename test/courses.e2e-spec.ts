@@ -54,7 +54,6 @@ describe('CoursesController (E2E - pure mock)', () => {
       name: 'Mocked NestJS Course',
       price: 100000,
       category: ['backend'],
-      teacherId: mockUser.id,
       level: 'beginner',
     };
 

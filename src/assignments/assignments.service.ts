@@ -1,11 +1,12 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Assignment } from '../common/entities/assigment.entity';
-import { CoursesModule } from '../common/entities/module.entity';
+import { Assignment } from '../common/entities/assignment.entity';
+import { Lesson } from '../common/entities/lesson.entity';
 import { Result } from '../common/entities/result.entity';
 import { User } from '../common/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -16,33 +17,33 @@ export class AssignmentsService {
   constructor(
     @InjectRepository(Assignment)
     private assignmentRepo: Repository<Assignment>,
-    @InjectRepository(CoursesModule)
-    private moduleRepo: Repository<CoursesModule>,
+    @InjectRepository(Lesson)
+    private lessonRepo: Repository<Lesson>,
     @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(Result) private resultRepo: Repository<Result>,
   ) {}
 
   async submitAssignment(params: {
-    moduleId: string;
+    lessonId: string;
     studentId: string;
     fileUrl?: string;
     fileLink?: string;
   }) {
-    const { moduleId, studentId, fileUrl, fileLink } = params;
+    const { lessonId, studentId, fileUrl, fileLink } = params;
 
     if (!fileUrl && !fileLink) {
       throw new BadRequestException('Either file or link must be provided');
     }
 
-    const module = await this.moduleRepo.findOne({ where: { id: moduleId } });
+    const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
     const student = await this.userRepo.findOne({ where: { id: studentId } });
 
-    if (!module || !student) {
-      throw new NotFoundException('Module or student not found');
+    if (!lesson || !student) {
+      throw new NotFoundException('Lesson or student not found');
     }
 
     const assignment = this.assignmentRepo.create({
-      module,
+      lesson,
       student,
       fileUrl,
       fileLink,
@@ -65,35 +66,11 @@ export class AssignmentsService {
   async getStudentAssignments(studentId: string) {
     const assignments = await this.assignmentRepo.find({
       where: { student: { id: studentId } },
-      relations: ['results', 'module'],
+      relations: ['results', 'lesson'],
       order: { submittedAt: 'DESC' },
     });
 
-    const groupedByModule = assignments.reduce(
-      (acc, assignment) => {
-        const module = assignment.module;
-        const moduleId = module.id;
-
-        if (!acc[moduleId]) {
-          acc[moduleId] = {
-            module: module,
-            assignments: [],
-          };
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { module: _, ...rest } = assignment;
-        acc[moduleId].assignments.push(rest);
-
-        return acc;
-      },
-      {} as Record<
-        string,
-        { module: CoursesModule; assignments: Omit<Assignment, 'module'>[] }
-      >,
-    );
-
-    return Object.values(groupedByModule);
+    return assignments;
   }
 
   async gradeAssignment(
@@ -103,17 +80,33 @@ export class AssignmentsService {
   ) {
     const result = await this.resultRepo.findOne({
       where: { id: resultId },
-      relations: ['assignment'],
+      relations: [
+        'assignment',
+        'assignment.lesson',
+        'assignment.lesson.module',
+        'assignment.lesson.module.course',
+        'assignment.lesson.module.course.teacher',
+      ],
     });
 
     if (!result) {
       throw new NotFoundException('Result not found');
     }
 
+    const grader = await this.userRepo.findOne({ where: { id: graderId } });
+
+    if (
+      grader?.role !== 'admin' &&
+      result.assignment.lesson.module.course.teacher.id !== graderId
+    ) {
+      throw new ForbiddenException(
+        'You are not allowed to grade this assignment',
+      );
+    }
+
     result.score = dto.score;
     result.feedback = dto.feedback;
     result.isChecked = true;
-    const grader = await this.userRepo.findOne({ where: { id: graderId } });
     result.gradedBy = grader ?? undefined;
 
     await this.resultRepo.save(result);

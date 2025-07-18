@@ -9,7 +9,7 @@ import { Repository } from 'typeorm';
 import { Course } from '../common/entities/course.entity';
 import { User } from '../common/entities/user.entity';
 import { Lesson } from '../common/entities/lesson.entity';
-import { CompletedLesson } from '../common/entities/completedLesson,entity';
+import { CompletedLesson } from '../common/entities/completedLesson.entity';
 
 @Injectable()
 export class EnrollmentsService {
@@ -93,5 +93,27 @@ export class EnrollmentsService {
       message: 'Your enrollments and progress',
       enrollments,
     };
+  }
+  async getEnrollmentsByCourse(courseId: string) {
+    const enrollments = await this.enrollmentRepo.find({
+      where: { course: { id: courseId } },
+      relations: ['student'],
+    });
+
+    return {
+      message: 'Enrollments for this course',
+      enrollments,
+    };
+  }
+
+  async unenroll(enrollmentId: string) {
+    const enrollment = await this.enrollmentRepo.findOne({
+      where: { id: enrollmentId },
+    });
+    if (!enrollment) throw new NotFoundException('Enrollment not found');
+
+    await this.enrollmentRepo.remove(enrollment);
+
+    return { message: 'Student unenrolled successfully' };
   }
 }

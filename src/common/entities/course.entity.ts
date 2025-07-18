@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from './user.entity';
-import { CoursesModule } from './module.entity';
+import { Module } from './module.entity';
 import { Enrollment } from './enrollment.entity';
 import { CourseLevels } from '../types_enums/enums';
 
@@ -36,8 +36,8 @@ export class Course {
   @Column('simple-array')
   category: string[];
 
-  @OneToMany(() => CoursesModule, (module) => module.course)
-  modules: CoursesModule[];
+  @OneToMany(() => Module, (module) => module.course)
+  modules: Module[];
 
   @OneToMany(() => Enrollment, (enrollment) => enrollment.course)
   enrollments: Enrollment[];

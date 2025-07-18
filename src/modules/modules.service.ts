@@ -1,14 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateModuleDto } from './dto/create-module.dto';
+import { UpdateModuleDto } from './dto/update-module.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CoursesModule } from '../common/entities/module.entity';
+import { Module } from '../common/entities/module.entity';
+import { Course } from '../common/entities/course.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
 export class ModulesService {
   constructor(
-    @InjectRepository(CoursesModule)
-    private moduleRepo: Repository<CoursesModule>,
+    @InjectRepository(Module) private moduleRepo: Repository<Module>,
+    @InjectRepository(Course) private courseRepo: Repository<Course>,
   ) {}
 
   async findModulesByCourse(courseId: string) {
@@ -26,7 +32,28 @@ export class ModulesService {
     };
   }
 
-  async create(courseId: string, createModuleDto: CreateModuleDto) {
+  async findOne(id: string) {
+    const module = await this.moduleRepo.findOne({
+      where: { id },
+      relations: ['course'],
+    });
+    if (!module) throw new NotFoundException('Module not found');
+    return { module };
+  }
+
+  async create(courseId: string, createModuleDto: CreateModuleDto, user: any) {
+    const course = await this.courseRepo.findOne({
+      where: { id: courseId },
+      relations: ['teacher'],
+    });
+    if (!course) throw new NotFoundException('Course not found');
+
+    if (user.role !== 'admin' && course.teacher.id !== user.userId) {
+      throw new ForbiddenException(
+        'You are not allowed to add module to this course',
+      );
+    }
+
     const module = this.moduleRepo.create({
       ...createModuleDto,
       course: { id: courseId },
@@ -61,11 +88,30 @@ export class ModulesService {
     };
   }
 
-  async remove(id: string) {
-    const module = await this.moduleRepo.findOne({ where: { id } });
-    if (!module) throw new NotFoundException('Module not found');
+  async update(id: string, updateModuleDto: UpdateModuleDto, user: any) {
+    const { module } = await this.findOne(id);
 
-    await this.moduleRepo.delete(id);
+    if (user.role !== 'admin' && module.course.teacher.id !== user.userId) {
+      throw new ForbiddenException('You are not allowed to update this module');
+    }
+
+    const updated = Object.assign(module, updateModuleDto);
+    await this.moduleRepo.save(updated);
+
+    return {
+      message: 'Module updated successfully',
+      module: updated,
+    };
+  }
+
+  async remove(id: string, user: any) {
+    const { module } = await this.findOne(id);
+
+    if (user.role !== 'admin' && module.course.teacher.id !== user.userId) {
+      throw new ForbiddenException('You are not allowed to delete this module');
+    }
+
+    await this.moduleRepo.remove(module);
 
     return {
       message: 'Module successfully removed from course',

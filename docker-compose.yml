@@ -7,7 +7,7 @@ services:
     env_file:
       - .env
     ports:
-      - '4000:4000'
+      - '${APP_PORT:-4000}:4000'
     depends_on:
       postgres:
         condition: service_healthy
@@ -18,19 +18,19 @@ services:
       - app-network
 
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: course-db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 2009
-      POSTGRES_DB: online_courses_db
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: ${DB_NAME:-online_courses_db}
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-postgres}']
       interval: 5s
       timeout: 5s
       retries: 5
     ports:
-      - '5432:5432'
+      - '${DB_PORT:-5432}:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
@@ -39,6 +39,7 @@ services:
 
 volumes:
   pgdata:
+    driver: local
 
 networks:
   app-network:

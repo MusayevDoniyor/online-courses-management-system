@@ -28,7 +28,7 @@ import { UpdateScoreAdmin } from './dto/update-score_admin.dto';
 export class AssignmentsController {
   constructor(private readonly assignmentsService: AssignmentsService) {}
 
-  @Post(':moduleId')
+  @Post(':lessonId')
   @Roles('student')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -58,7 +58,7 @@ export class AssignmentsController {
     }),
   )
   async submitAssignment(
-    @Param('moduleId', ParseUUIDPipe) moduleId: string,
+    @Param('lessonId', ParseUUIDPipe) lessonId: string,
     @Body('fileLink') fileLink: string,
     @Request() req: ServerRequest,
     @UploadedFile() file?: Express.Multer.File,
@@ -68,7 +68,7 @@ export class AssignmentsController {
     const fileUrl = file ? `/uploads/assignments/${file.filename}` : undefined;
 
     return this.assignmentsService.submitAssignment({
-      moduleId,
+      lessonId,
       studentId,
       fileUrl,
       fileLink,

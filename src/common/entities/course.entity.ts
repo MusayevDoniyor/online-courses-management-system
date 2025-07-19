@@ -42,6 +42,9 @@ export class Course {
   @OneToMany(() => Enrollment, (enrollment) => enrollment.course)
   enrollments: Enrollment[];
 
+  @Column({ default: 0 })
+  enrollmentCount: number;
+
   @Column({
     type: 'enum',
     enum: CourseLevels,

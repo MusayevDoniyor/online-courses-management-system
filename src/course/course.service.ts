@@ -18,24 +18,30 @@ export class CourseService {
   ) {}
 
   async create(createCourseDto: CreateCourseDto, user: any) {
+    const { teacherId, ...courseDetails } = createCourseDto;
     let teacher: User;
 
     if (user.role === 'admin') {
-      if (!createCourseDto.teacherId) {
+      if (!teacherId) {
         throw new NotFoundException(
           'teacherId must be provided when admin creates a course',
         );
       }
-      teacher = await this.userRepo.findOne({
-        where: { id: createCourseDto.teacherId },
+      const foundTeacher = await this.userRepo.findOne({
+        where: { id: teacherId },
       });
-      if (!teacher) throw new NotFoundException('Teacher not found');
+      if (!foundTeacher) throw new NotFoundException('Teacher not found');
+      teacher = foundTeacher;
     } else {
-      teacher = await this.userRepo.findOne({ where: { id: user.userId } });
+      const foundTeacher = await this.userRepo.findOne({
+        where: { id: user.userId },
+      });
+      if (!foundTeacher) throw new NotFoundException('Teacher not found');
+      teacher = foundTeacher;
     }
 
     const course = this.courseRepo.create({
-      ...createCourseDto,
+      ...courseDetails,
       teacher,
     });
 
@@ -59,75 +65,11 @@ export class CourseService {
   }
 
   async getTopCourses(period: string, limit: number) {
-    const query = this.courseRepo
-      .createQueryBuilder('course')
-      .leftJoinAndSelect('course.teacher', 'teacher')
-      .leftJoin('course.enrollments', 'enrollment');
-
-    if (period) {
-      const now = new Date();
-      let startDate: Date;
-
-      switch (period) {
-        case 'day':
-          startDate = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate() - 1,
-          );
-          break;
-        case 'week':
-          startDate = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate() - 7,
-          );
-          break;
-        case 'month':
-          startDate = new Date(
-            now.getFullYear(),
-            now.getMonth() - 1,
-            now.getDate(),
-          );
-          break;
-        case 'year':
-          startDate = new Date(
-            now.getFullYear() - 1,
-            now.getMonth(),
-            now.getDate(),
-          );
-          break;
-        default:
-          startDate = new Date(0);
-      }
-
-      query.andWhere('enrollment.enrolled_at >= :startDate', { startDate });
-    }
-
-    query
-      .groupBy('course.id')
-      .addGroupBy('teacher.id')
-      .select([
-        'course.id',
-        'course.name',
-        'course.price',
-        'course.category',
-        'course.level',
-        'course.created_at',
-        'teacher.id',
-        'teacher.name',
-        'teacher.email',
-      ])
-      .addSelect('COUNT(enrollment.id)', 'enrollmentCount')
-      .orderBy('enrollmentCount', 'DESC')
-      .limit(limit);
-
-    const rawResults = await query.getRawAndEntities();
-
-    const topCourses = rawResults.entities.map((course, index) => ({
-      ...course,
-      enrollmentCount: parseInt(rawResults.raw[index].enrollmentCount, 10),
-    }));
+    const topCourses = await this.courseRepo.find({
+      order: { enrollmentCount: 'DESC' },
+      take: limit,
+      relations: ['teacher'],
+    });
 
     return {
       message: 'Top courses retrieved successfully',

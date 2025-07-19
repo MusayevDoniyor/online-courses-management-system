@@ -43,6 +43,8 @@ export class EnrollmentsService {
       course: course,
     });
 
+    course.enrollmentCount++;
+    await this.courseRepo.save(course);
     await this.enrollmentRepo.save(enrollment);
 
     return {
@@ -109,9 +111,12 @@ export class EnrollmentsService {
   async unenroll(enrollmentId: string) {
     const enrollment = await this.enrollmentRepo.findOne({
       where: { id: enrollmentId },
+      relations: ['course'],
     });
     if (!enrollment) throw new NotFoundException('Enrollment not found');
 
+    enrollment.course.enrollmentCount--;
+    await this.courseRepo.save(enrollment.course);
     await this.enrollmentRepo.remove(enrollment);
 
     return { message: 'Student unenrolled successfully' };

@@ -8,6 +8,7 @@ import {
   Request,
   Req,
   Delete,
+  Param,
 } from '@nestjs/common';
 import { AuthService, IUserPayload } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -15,6 +16,8 @@ import { LoginDto } from './dto/login.dto';
 import { Request as ServerRequest, Response } from 'express';
 import { JwtAuthGuard } from '../common/guards/auth.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 @ApiBearerAuth('access_token')
@@ -57,12 +60,6 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('/profile')
-  async getProfile(@Request() req: { user: IUserPayload }) {
-    return this.authService.getProfile(req.user);
-  }
-
-  @UseGuards(JwtAuthGuard)
   @Post('logout')
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('access_token');
@@ -70,15 +67,16 @@ export class AuthController {
     return { message: 'Logged out successfully' };
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Delete('delete')
-  delete(
-    @Req() req: { user: IUserPayload },
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    res.clearCookie('access_token');
-    res.clearCookie('refresh_token');
+  @Post('forgot-password')
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto);
+  }
 
-    return this.authService.deleteProfile(req.user.userId);
+  @Post('reset-password/:token')
+  async resetPassword(
+    @Param('token') token: string,
+    @Body() resetPasswordDto: ResetPasswordDto,
+  ) {
+    return this.authService.resetPassword(token, resetPasswordDto);
   }
 }

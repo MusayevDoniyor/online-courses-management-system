@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { LessonsService } from './lessons.service';
 import { LessonsController } from './lessons.controller';
 import { Lesson } from '../common/entities/lesson.entity';
-import { Module } from '../common/entities/module.entity';
+import { Module as CourseModule } from '../common/entities/module.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({

@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { User } from '../common/entities/user.entity';
 import { UserRole } from '../common/types_enums/enums';
 import { Course } from '../common/entities/course.entity';
+import { Enrollment } from '../common/entities/enrollment.entity';
+import { Lesson } from '../common/entities/lesson.entity';
 
 @Injectable()
 export class AdminService {
@@ -12,6 +14,10 @@ export class AdminService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Course)
     private readonly courseRepository: Repository<Course>,
+    @InjectRepository(Enrollment)
+    private readonly enrollmentRepository: Repository<Enrollment>,
+    @InjectRepository(Lesson)
+    private readonly lessonRepository: Repository<Lesson>,
   ) {}
 
   async findAllUsers() {
@@ -46,11 +52,35 @@ export class AdminService {
 
   async getStatsOverview() {
     const totalUsers = await this.userRepository.count();
+    const totalStudents = await this.userRepository.count({
+      where: { role: UserRole.STUDENT },
+    });
+    const totalTeachers = await this.userRepository.count({
+      where: { role: UserRole.TEACHER },
+    });
+    const totalAdmins = await this.userRepository.count({
+      where: { role: UserRole.ADMIN },
+    });
     const totalCourses = await this.courseRepository.count();
+    const totalEnrollments = await this.enrollmentRepository.count();
+    const totalLessons = await this.lessonRepository.count();
 
     return {
-      totalUsers,
-      totalCourses,
+      users: {
+        total: totalUsers,
+        students: totalStudents,
+        teachers: totalTeachers,
+        admins: totalAdmins,
+      },
+      courses: {
+        total: totalCourses,
+      },
+      enrollments: {
+        total: totalEnrollments,
+      },
+      lessons: {
+        total: totalLessons,
+      },
     };
   }
 }

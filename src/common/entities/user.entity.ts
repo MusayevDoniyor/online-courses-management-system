@@ -20,6 +20,9 @@ export class User {
   @Column()
   name: string;
 
+  @Column()
+  full_name: string;
+
   @Column({ unique: true })
   email: string;
 
@@ -43,6 +46,12 @@ export class User {
     default: () => 'CURRENT_TIMESTAMP',
   })
   created_at: Date;
+
+  @Column({ type: 'varchar', nullable: true })
+  reset_password_token: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  reset_password_expires: Date | null;
 
   @BeforeInsert()
   async hashPassword() {

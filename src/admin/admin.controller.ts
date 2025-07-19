@@ -11,6 +11,7 @@ import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../common/guards/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { ChangeRoleDto } from './dto/change-role-admin.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -31,7 +32,7 @@ export class AdminController {
 
   @Put('users/:id/role')
   @Roles('admin')
-  updateUserRole(@Param('id') id: string, @Body() body: { role: string }) {
+  updateUserRole(@Param('id') id: string, @Body() body: ChangeRoleDto) {
     return this.adminService.updateUserRole(id, body.role);
   }
 

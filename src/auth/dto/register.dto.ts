@@ -17,6 +17,11 @@ export class RegisterDto {
   @IsString()
   name: string;
 
+  @ApiProperty({ example: 'John Doe' })
+  @IsNotEmpty()
+  @IsString()
+  full_name: string;
+
   @ApiProperty({ example: 'john@gmail.com' })
   @IsNotEmpty()
   @IsEmail({}, { message: "Email manzilingiz noto'g'ri" })

@@ -5,7 +5,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Assignment } from './assigment.entity';
+import { Assignment } from './assignment.entity';
 import { User } from './user.entity';
 
 @Entity({ name: 'Results' })

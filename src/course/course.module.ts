@@ -9,5 +9,6 @@ import { User } from '../common/entities/user.entity';
   imports: [TypeOrmModule.forFeature([Course, User])],
   controllers: [CourseController],
   providers: [CourseService],
+  exports: [CourseService],
 })
 export class CourseModule {}

@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  Request,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -15,6 +16,7 @@ import { UpdateCourseDto } from './dto/update-course.dto';
 import { JwtAuthGuard } from '../common/guards/auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { IUserPayload } from 'src/auth/auth.service';
 
 @Controller('courses')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -23,7 +25,10 @@ export class CourseController {
 
   @Roles('admin', 'teacher')
   @Post()
-  create(@Body() createCourseDto: CreateCourseDto, @Request() req) {
+  create(
+    @Body() createCourseDto: CreateCourseDto,
+    @Request() req: { user: IUserPayload },
+  ) {
     const user = req.user;
     return this.courseService.create(createCourseDto, user);
   }

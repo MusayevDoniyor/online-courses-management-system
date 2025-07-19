@@ -2,6 +2,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
@@ -13,6 +14,10 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import * as crypto from 'crypto';
+import { MailerService } from '../mailer/mailer.service';
 
 interface JwtRefreshPayload {
   sub: string;
@@ -33,6 +38,7 @@ export class AuthService {
     private userRepo: Repository<User>,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private mailerService: MailerService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -50,10 +56,10 @@ export class AuthService {
       message: 'User registered successfully',
       user: {
         id: user.id,
-        name: user.name,
+        full_name: user.full_name,
         email: user.email,
         role: user.role,
-        createdAt: user.created_at,
+        created_at: user.created_at,
       },
     };
   }
@@ -61,7 +67,7 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const user = await this.userRepo.findOne({
       where: { email: loginDto.email },
-      select: ['id', 'name', 'email', 'password', 'role', 'created_at'],
+      select: ['id', 'full_name', 'email', 'password', 'role', 'created_at'],
     });
 
     if (!user) {
@@ -95,10 +101,10 @@ export class AuthService {
       message: 'User logged in successfully',
       user: {
         id: user.id,
-        name: user.name,
+        full_name: user.full_name,
         email: user.email,
         role: user.role,
-        createdAt: user.created_at,
+        created_at: user.created_at,
       },
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -138,18 +144,63 @@ export class AuthService {
     return { message: 'Access token refreshed' };
   }
 
-  async getProfile(userPayload: IUserPayload) {
-    return await this.userRepo.findOne({
-      where: {
-        email: userPayload.email,
-        id: userPayload.userId,
-      },
-      select: ['id', 'name', 'email', 'role', 'created_at'],
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    const user = await this.userRepo.findOne({
+      where: { email: forgotPasswordDto.email },
     });
+
+    if (!user) {
+      throw new NotFoundException('User with this email does not exist');
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.reset_password_token = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+    user.reset_password_expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await this.userRepo.save(user);
+
+    const resetURL = `http://localhost:5173/auth/reset-password?token=${resetToken}`;
+
+    await this.mailerService.sendMail(
+      user.email,
+      'Password Reset Token',
+      `Your password reset token is: ${resetToken}`,
+      `<p>To reset your password, please click on this link: <a href="${resetURL}">${resetURL}</a></p>`,
+    );
+
+    return { message: 'Password reset token sent to your email' };
   }
 
-  async deleteProfile(id: string) {
-    await this.userRepo.delete(id);
-    return { message: 'Profile deleted successfully' };
+  async resetPassword(token: string, resetPasswordDto: ResetPasswordDto) {
+    if (resetPasswordDto.password !== resetPasswordDto.confirm_password) {
+      throw new ConflictException('Passwords do not match');
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await this.userRepo.findOne({
+      where: {
+        reset_password_token: hashedToken,
+      },
+    });
+
+    if (
+      !user ||
+      !user.reset_password_expires ||
+      user.reset_password_expires < new Date()
+    ) {
+      throw new UnauthorizedException('Token is invalid or has expired');
+    }
+
+    user.password = await bcrypt.hash(resetPasswordDto.password, 12);
+    user.reset_password_token = null;
+    user.reset_password_expires = null;
+
+    await this.userRepo.save(user);
+
+    return { message: 'Password has been reset successfully' };
   }
 }

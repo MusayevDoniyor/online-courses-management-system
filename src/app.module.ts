@@ -4,7 +4,6 @@ import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
-import { CourseModule } from './course/course.module';
 import { User } from './common/entities/user.entity';
 import { Course } from './common/entities/course.entity';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -20,6 +19,7 @@ import { Assignment } from './common/entities/assignment.entity';
 import { Result } from './common/entities/result.entity';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { AdminModule } from './admin/admin.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -57,6 +57,7 @@ import { AdminModule } from './admin/admin.module';
     EnrollmentsModule,
     AssignmentsModule,
     AdminModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [

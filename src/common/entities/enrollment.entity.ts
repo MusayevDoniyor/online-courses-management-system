@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { Course } from './course.entity';
-import { CompletedLesson } from './completedLesson,entity';
+import { CompletedLesson } from './completedLesson.entity';
 
 @Entity({ name: 'Enrollments' })
 @Unique(['student', 'course'])
